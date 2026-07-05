@@ -1,0 +1,178 @@
+.sector-grid__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sector-grid__header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sector-grid__export-btn {
+  flex-shrink: 0;
+}
+
+.sector-grid__message {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+}
+
+.sector-grid__message--error {
+  background: var(--risk-high-bg);
+  border: 1px solid var(--risk-high-dim);
+  color: var(--risk-high);
+}
+
+.sector-grid__message--info {
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #22c55e;
+}
+
+.sector-grid__empty {
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  border: 1px dashed var(--glass-border);
+  border-radius: var(--radius-lg);
+}
+
+.sector-grid__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.sector-card {
+  position: relative;
+  padding: 1.25rem;
+  overflow: hidden;
+  transition:
+    border-color var(--transition-base),
+    box-shadow var(--transition-base),
+    transform var(--transition-base);
+}
+
+.sector-card:hover {
+  transform: translateY(-4px);
+}
+
+.sector-card__indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  transition: background var(--transition-base);
+}
+
+.sector-card--low .sector-card__indicator {
+  background: linear-gradient(90deg, var(--risk-low), transparent);
+  box-shadow: 0 0 12px var(--risk-low);
+}
+
+.sector-card--medium .sector-card__indicator {
+  background: linear-gradient(90deg, var(--risk-medium), transparent);
+  box-shadow: 0 0 12px var(--risk-medium);
+}
+
+.sector-card--high .sector-card__indicator {
+  background: linear-gradient(90deg, var(--risk-high), transparent);
+  box-shadow: 0 0 12px var(--risk-high);
+}
+
+.sector-card--low {
+  border-color: var(--risk-low-dim);
+}
+
+.sector-card--medium {
+  border-color: var(--risk-medium-dim);
+}
+
+.sector-card--high {
+  border-color: var(--risk-high-dim);
+  box-shadow: var(--glass-shadow), 0 0 30px var(--risk-high-glow);
+}
+
+.sector-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sector-card__name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sector-card__risk {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sector-card--low .sector-card__risk {
+  color: var(--risk-low);
+}
+
+.sector-card--medium .sector-card__risk {
+  color: var(--risk-medium);
+}
+
+.sector-card--high .sector-card__risk {
+  color: var(--risk-high);
+}
+
+.sector-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--glass-border);
+}
+
+.sector-card__metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.sector-card__metric-label {
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sector-card__metric-value {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.sector-card__delete {
+  margin-top: 0.75rem;
+  align-self: flex-start;
+  font-size: 0.75rem;
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+.sector-card__delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+}

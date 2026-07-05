@@ -1,0 +1,11 @@
+.operator-link {
+  color: var(--accent-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.operator-link:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}

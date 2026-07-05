@@ -1,0 +1,102 @@
+.dashboard-weather-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.dashboard-weather-controls__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 1rem;
+  width: 100%;
+}
+
+.dashboard-weather-controls__sync {
+  flex: 1 1 16rem;
+  min-width: 12rem;
+}
+
+.dashboard-weather-controls__spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.375rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: weather-spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
+.dashboard-weather-controls__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+  border: 1px solid var(--glass-border);
+}
+
+.dashboard-weather-controls__meta-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dashboard-weather-controls__meta-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--accent-primary);
+}
+
+.dashboard-weather-controls__error {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--risk-high-bg);
+  border: 1px solid var(--risk-high-dim);
+  color: var(--risk-high);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.dashboard-weather-controls__status {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dashboard-weather-controls__status--fresh {
+  background: var(--risk-low-bg);
+  border: 1px solid var(--risk-low-dim);
+  color: var(--risk-low);
+}
+
+.dashboard-weather-controls__status--cached {
+  background: var(--risk-medium-bg);
+  border: 1px solid var(--risk-medium-dim);
+  color: var(--risk-medium);
+}
+
+.dashboard-weather-controls__status--error {
+  background: var(--risk-high-bg);
+  border: 1px solid var(--risk-high-dim);
+  color: var(--risk-high);
+  font-weight: 600;
+}
+
+@keyframes weather-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

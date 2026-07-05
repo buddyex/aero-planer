@@ -1,0 +1,25 @@
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow);
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base),
+    border-color var(--transition-base);
+}
+
+.glass-card:hover {
+  border-color: var(--glass-border-hover);
+}
+
+.glass-card--accent {
+  border-color: var(--accent-primary-dim);
+  box-shadow: var(--glass-shadow), 0 0 40px var(--accent-glow);
+}
+
+.glass-card--accent:hover {
+  border-color: var(--accent-primary);
+}

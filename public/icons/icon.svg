@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Aero-Planer">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="140" fill="none" stroke="#0ea5e9" stroke-width="16"/>
+  <path d="M256 140 L296 316 L256 280 L216 316 Z" fill="#38bdf8"/>
+  <path d="M180 320 L332 320" stroke="#7dd3fc" stroke-width="12" stroke-linecap="round"/>
+</svg>

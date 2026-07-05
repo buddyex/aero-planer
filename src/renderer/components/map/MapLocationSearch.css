@@ -1,0 +1,36 @@
+.map-location-search-wrap {
+  flex: 1;
+  min-width: 12rem;
+  max-width: 28rem;
+}
+
+.map-location-search {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.map-location-search__input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.map-location-search__input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.map-location-search__btn {
+  flex-shrink: 0;
+}
+
+.map-location-search__error {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--risk-high);
+}

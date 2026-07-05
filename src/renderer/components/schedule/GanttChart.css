@@ -1,0 +1,233 @@
+.gantt-chart {
+  padding: 1.5rem;
+}
+
+.gantt-chart__inner {
+  --gantt-label-width: 240px;
+}
+
+.gantt-chart__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.gantt-chart__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.gantt-chart__legend {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.gantt-legend {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+}
+
+.gantt-legend--low {
+  background: var(--risk-low-bg);
+  color: var(--risk-low);
+}
+
+.gantt-legend--medium {
+  background: var(--risk-medium-bg);
+  color: var(--risk-medium);
+}
+
+.gantt-legend--high {
+  background: var(--risk-high-bg);
+  color: var(--risk-high);
+}
+
+.gantt-chart__scroll {
+  position: relative;
+  overflow-x: auto;
+  min-height: 200px;
+}
+
+.gantt-chart__axis {
+  position: relative;
+  height: 2.5rem;
+  margin-left: var(--gantt-label-width);
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: 0.5rem;
+}
+
+.gantt-chart__tick {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.gantt-chart__tick-day {
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.gantt-chart__tick-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+}
+
+.gantt-chart__grid {
+  position: absolute;
+  top: 2.5rem;
+  left: var(--gantt-label-width);
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.gantt-chart__grid-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--glass-border);
+  opacity: 0.5;
+}
+
+.gantt-chart__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.gantt-chart__row {
+  display: grid;
+  grid-template-columns: var(--gantt-label-width) 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3rem;
+}
+
+.gantt-chart__row-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding-right: 0.5rem;
+}
+
+.gantt-chart__mission-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gantt-chart__mission-meta {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gantt-chart__track {
+  position: relative;
+  height: 2.25rem;
+  background: var(--surface-elevated);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  min-width: 600px;
+}
+
+.gantt-bar {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.35rem;
+  min-width: 2.75rem;
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-base),
+    filter var(--transition-base);
+}
+
+.gantt-bar:hover {
+  transform: scaleY(1.08);
+  z-index: 2;
+  filter: brightness(1.1);
+}
+
+.gantt-bar--low {
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.85), rgba(56, 189, 248, 0.7));
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}
+
+.gantt-bar--medium {
+  background: linear-gradient(90deg, rgba(234, 179, 8, 0.9), rgba(251, 146, 60, 0.8));
+  box-shadow: 0 2px 8px rgba(234, 179, 8, 0.35);
+}
+
+.gantt-bar--high {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.95), rgba(249, 115, 22, 0.9));
+  box-shadow: 0 2px 12px rgba(239, 68, 68, 0.45);
+  animation: gantt-pulse-high 2s ease-in-out infinite;
+}
+
+.gantt-bar--active {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+}
+
+.gantt-bar__label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.gantt-chart__empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+@keyframes gantt-pulse-high {
+  0%,
+  100% {
+    box-shadow: 0 2px 12px rgba(239, 68, 68, 0.45);
+  }
+  50% {
+    box-shadow: 0 2px 20px rgba(239, 68, 68, 0.65);
+  }
+}
+
+@media (max-width: 768px) {
+  .gantt-chart__inner {
+    --gantt-label-width: 140px;
+  }
+}

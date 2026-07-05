@@ -1,0 +1,121 @@
+.upcoming-missions {
+  padding: 1.5rem;
+  height: 100%;
+}
+
+.upcoming-missions__list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.upcoming-missions__item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+  border: 1px solid var(--glass-border);
+  transition:
+    background var(--transition-base),
+    border-color var(--transition-base),
+    transform var(--transition-fast);
+}
+
+.upcoming-missions__item:hover {
+  background: var(--surface-hover);
+  transform: translateX(4px);
+}
+
+.upcoming-missions__item--medium-risk {
+  border-color: var(--risk-medium-dim);
+  background: var(--risk-medium-bg);
+}
+
+.upcoming-missions__item--high-risk {
+  border-color: var(--risk-high-dim);
+  background: var(--risk-high-bg);
+}
+
+.upcoming-missions__time {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 4.5rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.upcoming-missions__date {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.upcoming-missions__hour {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+}
+
+.upcoming-missions__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.upcoming-missions__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upcoming-missions__meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upcoming-missions__risk {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.upcoming-missions__risk--low {
+  background: var(--risk-low-bg);
+  color: var(--risk-low);
+}
+
+.upcoming-missions__risk--medium {
+  background: var(--risk-medium-bg);
+  color: var(--risk-medium);
+}
+
+.upcoming-missions__risk--high {
+  background: var(--risk-high-bg);
+  color: var(--risk-high);
+}
+
+.upcoming-missions__empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}

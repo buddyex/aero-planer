@@ -1,0 +1,18 @@
+.create-mission-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.create-mission-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 480px) {
+  .create-mission-form__row {
+    grid-template-columns: 1fr;
+  }
+}

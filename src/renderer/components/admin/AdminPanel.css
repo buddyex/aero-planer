@@ -1,0 +1,143 @@
+.admin-panel {
+  animation: admin-fade-in 0.4s ease;
+}
+
+.admin-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.admin-panel__title {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+}
+
+.admin-panel__desc {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.admin-panel__table-card {
+  overflow: hidden;
+}
+
+.admin-panel__loading {
+  margin: 0;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.admin-panel__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.admin-panel__table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.admin-panel__table td {
+  padding: 0.85rem 1rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.admin-panel__row {
+  transition: background var(--transition-fast);
+}
+
+.admin-panel__row:hover {
+  background: var(--surface-hover);
+}
+
+.admin-panel__role {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: var(--surface-elevated);
+  border: 1px solid var(--glass-border);
+}
+
+.admin-panel__role--Администратор {
+  color: var(--accent-primary);
+  border-color: var(--accent-primary-dim);
+}
+
+.admin-panel__role--Руководитель {
+  color: var(--accent-secondary, #a78bfa);
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+.admin-panel__role--Оператор {
+  color: var(--risk-low);
+  border-color: var(--risk-low-dim);
+}
+
+.admin-panel__role--Техник {
+  color: var(--risk-medium);
+  border-color: var(--risk-medium-dim);
+}
+
+.admin-panel__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.admin-panel__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-panel__form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.admin-panel__error {
+  margin: 0;
+  padding: 0.65rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+@keyframes admin-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-panel__header {
+    flex-direction: column;
+  }
+
+  .admin-panel__table {
+    display: block;
+    overflow-x: auto;
+  }
+}
