@@ -21,6 +21,7 @@ export function BatteryFormModal({ open, onClose, onSubmit }: BatteryFormModalPr
   const [capacity, setCapacity] = useState(10000);
   const [saving, setSaving] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!open) return;
@@ -28,11 +29,36 @@ export function BatteryFormModal({ open, onClose, onSubmit }: BatteryFormModalPr
     setBatteryType('LiPo');
     setCapacity(10000);
     setLocalError('');
+    setFieldErrors({});
   }, [open]);
+
+  const clearFieldError = (key: string) => {
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setLocalError('');
+    setFieldErrors({});
+
+    const errors: Record<string, string> = {};
+    if (!serialNumber.trim()) {
+      errors.serial_number = 'Укажите серийный номер АКБ.';
+    }
+    if (!Number.isFinite(capacity) || capacity <= 0) {
+      errors.capacity = 'Ёмкость должна быть положительным числом.';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
     setSaving(true);
 
     const result = await onSubmit(serialNumber, batteryType, capacity);
@@ -49,7 +75,7 @@ export function BatteryFormModal({ open, onClose, onSubmit }: BatteryFormModalPr
   return (
     <Modal open={open} onClose={onClose} title="Добавить новую АКБ">
       <form className="battery-form" onSubmit={handleSubmit}>
-        <div className="form-field">
+        <div className={`form-field${fieldErrors.serial_number ? ' form-field--invalid' : ''}`}>
           <label className="form-field__label" htmlFor="battery-serial">
             Серийный номер
           </label>
@@ -57,10 +83,14 @@ export function BatteryFormModal({ open, onClose, onSubmit }: BatteryFormModalPr
             id="battery-serial"
             className="form-field__input"
             value={serialNumber}
-            onChange={(e) => setSerialNumber(e.target.value)}
+            onChange={(e) => {
+              clearFieldError('serial_number');
+              setSerialNumber(e.target.value);
+            }}
             placeholder="SN-9872"
             required
           />
+          {fieldErrors.serial_number && <p className="form-field__error">{fieldErrors.serial_number}</p>}
         </div>
 
         <div className="form-field">
@@ -75,7 +105,7 @@ export function BatteryFormModal({ open, onClose, onSubmit }: BatteryFormModalPr
           />
         </div>
 
-        <div className="form-field">
+        <div className={`form-field${fieldErrors.capacity ? ' form-field--invalid' : ''}`}>
           <label className="form-field__label" htmlFor="battery-capacity">
             Ёмкость, мАч
           </label>
@@ -86,9 +116,13 @@ export function BatteryFormModal({ open, onClose, onSubmit }: BatteryFormModalPr
             min={1}
             step={1}
             value={capacity}
-            onChange={(e) => setCapacity(Number(e.target.value))}
+            onChange={(e) => {
+              clearFieldError('capacity');
+              setCapacity(Number(e.target.value));
+            }}
             required
           />
+          {fieldErrors.capacity && <p className="form-field__error">{fieldErrors.capacity}</p>}
         </div>
 
         {localError && (

@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance } from 'axios';
 import type { DataApi } from '../shared/api/DataApi';
-import type { ApiResult, AuthUserRow } from '../shared/types/api.types';
+import type { ApiResult, AuthUserRow, RendererErrorPayload, SystemErrorFilters } from '../shared/types/api.types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const TOKEN_KEY = 'aero-planer-access-token';
@@ -466,7 +466,7 @@ export class HttpDataApi {
     return this.wrap(this.client.get('/system/integrity'));
   }
 
-  getSystemErrorLogs(filters?: Record<string, unknown>) {
+  getSystemErrorLogs(filters?: SystemErrorFilters) {
     return this.wrap(this.client.get('/system/errors', { params: filters }));
   }
 
@@ -474,7 +474,7 @@ export class HttpDataApi {
     return this.wrap(this.client.get('/system/errors/stats', { params: filters }));
   }
 
-  reportRendererError(payload: Record<string, unknown>) {
+  reportRendererError(payload: RendererErrorPayload) {
     return this.wrap(this.client.post('/system/errors/report', payload));
   }
 

@@ -3,6 +3,7 @@ import type { Drone, DronePayload, DroneStatus } from '../../types';
 import { useAppData } from '../../context/AppDataContext';
 import { useApi } from '../../context/ApiContext';
 import { countDronesByStatus } from '../../utils/drones';
+import { isDroneNearMaintenance } from '../../utils/maintenanceRules';
 import { GlassCard } from '../ui/GlassCard';
 import { DroneFormModal } from './DroneFormModal';
 import { FleetToast } from './FleetToast';
@@ -43,7 +44,12 @@ function DroneCard({
             <p className="fleet-card__serial">{drone.serial_number}</p>
           </div>
         </div>
-        <span className="fleet-card__badge">{drone.status}</span>
+        <div className="fleet-card__badges">
+          <span className="fleet-card__badge">{drone.status}</span>
+          {isDroneNearMaintenance(drone.flight_hours) && (
+            <span className="fleet-card__badge fleet-card__badge--soon">Скоро ТО</span>
+          )}
+        </div>
       </header>
 
       <ul className="fleet-card__specs">
@@ -74,7 +80,7 @@ function DroneCard({
           </span>
           <span className="fleet-card__spec-label">Налёт</span>
           <span
-            className={`fleet-card__spec-value${(drone.flight_hours ?? 0) > 100 ? ' fleet-card__spec-value--warn' : ''}`}
+            className={`fleet-card__spec-value${(drone.flight_hours ?? 0) >= 100 ? ' fleet-card__spec-value--warn' : ''}`}
           >
             {(drone.flight_hours ?? 0).toFixed(1)} ч
           </span>
@@ -154,7 +160,7 @@ export function FleetManager() {
 
   const handleSubmit = async (payload: DronePayload): Promise<{ ok: boolean; error?: string }> => {
     const result = editingDrone
-      ? await api.updateDrone(editingDrone.id, payload)
+      ? await api.updateDrone(editingDrone.id, { ...payload, status: editingDrone.status })
       : await api.addDrone(payload);
 
     if (result.ok) {

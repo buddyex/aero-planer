@@ -62,6 +62,13 @@ select.form-field__select option {
   color: var(--risk-high);
 }
 
+.form-field--invalid .form-field__input,
+.form-field--invalid .form-field__select,
+.form-field--invalid .app-select__trigger,
+.ru-datetime.form-field--invalid .form-field__input {
+  border-color: var(--risk-high);
+}
+
 .form-actions {
   display: flex;
   gap: 0.75rem;
@@ -76,6 +83,7 @@ select.form-field__select option {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  min-height: 2.75rem;
   padding: 0.625rem 1.25rem;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
@@ -120,6 +128,18 @@ select.form-field__select option {
   color: var(--text-primary);
 }
 
+.btn--ghost {
+  background: var(--surface-elevated);
+  border-color: var(--glass-border);
+  color: var(--text-secondary);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: var(--surface-hover);
+  border-color: var(--glass-border-hover);
+  color: var(--text-primary);
+}
+
 .btn--accent {
   width: 100%;
   padding: 0.875rem 1.5rem;
@@ -131,4 +151,14 @@ select.form-field__select option {
 
 .btn--accent:hover:not(:disabled) {
   box-shadow: 0 8px 32px var(--accent-glow);
+}
+
+@media (max-width: 639px) {
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .form-actions .btn {
+    width: 100%;
+  }
 }

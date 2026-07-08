@@ -4,6 +4,7 @@ import { Circle, MapContainer, Polygon, useMapEvents } from 'react-leaflet';
 import { OfflineTileLayer } from './OfflineTileLayer';
 import type { Sector, SectorShapeType, UpdateSectorBoundaryPayload } from '../../types';
 import { kmToMeters, parseSectorPolygon, RISK_COLORS, UDMURT_MAP_CENTER, UDMURT_MAP_ZOOM } from '../../utils/map';
+import { validateSectorCoords } from '../../utils/geoBounds';
 import { blurLeafletMaps, purgeOrphanModalNodes } from '../../utils/mapFocus';
 import './EditSectorBoundaryModal.css';
 
@@ -46,6 +47,7 @@ export function EditSectorBoundaryModal({
   const [radius, setRadius] = useState('20');
   const [drawMode, setDrawMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const latInputRef = useRef<HTMLInputElement>(null);
   const onCloseRef = useRef(onClose);
@@ -53,6 +55,7 @@ export function EditSectorBoundaryModal({
 
   const handleClose = useCallback(() => {
     setError(null);
+    setFieldErrors({});
     setDrawMode(false);
     blurLeafletMaps();
     onCloseRef.current();
@@ -71,6 +74,7 @@ export function EditSectorBoundaryModal({
     setRadius(String(sector.radius_km ?? 20));
     setDrawMode(false);
     setError(null);
+    setFieldErrors({});
   }, [open, sector]);
 
   useLayoutEffect(() => {
@@ -109,9 +113,47 @@ export function EditSectorBoundaryModal({
 
   if (!open || !sector) return null;
 
+  const clearFieldError = (key: string) => {
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
+
   const handleSave = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
+    setFieldErrors({});
+
+    const errors: Record<string, string> = {};
+
+    if (shapeType === 'polygon') {
+      if (vertices.length < 3) {
+        errors.boundary = 'Полигон должен содержать минимум 3 вершины.';
+      }
+    } else {
+      const latitude = Number(String(lat).replace(',', '.'));
+      const longitude = Number(String(lon).replace(',', '.'));
+      const radiusKm = Number(radius);
+
+      const validation = validateSectorCoords(latitude, longitude);
+      if (!validation.ok) {
+        const message = validation.message ?? 'Некорректные координаты.';
+        errors.lat = message;
+        errors.lon = message;
+      }
+      if (!Number.isFinite(radiusKm) || radiusKm < 5 || radiusKm > 60) {
+        errors.radius = 'Радиус должен быть от 5 до 60 км.';
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
     setSaving(true);
 
     const payload: UpdateSectorBoundaryPayload =
@@ -174,7 +216,7 @@ export function EditSectorBoundaryModal({
 
         {shapeType === 'circle' ? (
           <div className="edit-sector-modal__row">
-            <div className="form-field">
+            <div className={`form-field${fieldErrors.lat ? ' form-field--invalid' : ''}`}>
               <label className="form-field__label" htmlFor="edit-sector-lat">
                 Широта
               </label>
@@ -183,10 +225,15 @@ export function EditSectorBoundaryModal({
                 id="edit-sector-lat"
                 className="form-field__input"
                 value={lat}
-                onChange={(e) => setLat(e.target.value)}
+                onChange={(e) => {
+                  clearFieldError('lat');
+                  clearFieldError('lon');
+                  setLat(e.target.value);
+                }}
               />
+              {fieldErrors.lat && <p className="form-field__error">{fieldErrors.lat}</p>}
             </div>
-            <div className="form-field">
+            <div className={`form-field${fieldErrors.lon ? ' form-field--invalid' : ''}`}>
               <label className="form-field__label" htmlFor="edit-sector-lon">
                 Долгота
               </label>
@@ -194,10 +241,15 @@ export function EditSectorBoundaryModal({
                 id="edit-sector-lon"
                 className="form-field__input"
                 value={lon}
-                onChange={(e) => setLon(e.target.value)}
+                onChange={(e) => {
+                  clearFieldError('lat');
+                  clearFieldError('lon');
+                  setLon(e.target.value);
+                }}
               />
+              {fieldErrors.lon && <p className="form-field__error">{fieldErrors.lon}</p>}
             </div>
-            <div className="form-field">
+            <div className={`form-field${fieldErrors.radius ? ' form-field--invalid' : ''}`}>
               <label className="form-field__label" htmlFor="edit-sector-radius">
                 Радиус (км)
               </label>
@@ -208,8 +260,12 @@ export function EditSectorBoundaryModal({
                 max="60"
                 className="form-field__input"
                 value={radius}
-                onChange={(e) => setRadius(e.target.value)}
+                onChange={(e) => {
+                  clearFieldError('radius');
+                  setRadius(e.target.value);
+                }}
               />
+              {fieldErrors.radius && <p className="form-field__error">{fieldErrors.radius}</p>}
             </div>
           </div>
         ) : (
@@ -238,6 +294,7 @@ export function EditSectorBoundaryModal({
               Очистить
             </button>
             <span className="edit-sector-modal__vertex-count">Точек: {vertices.length}</span>
+            {fieldErrors.boundary && <p className="form-field__error">{fieldErrors.boundary}</p>}
           </div>
         )}
 

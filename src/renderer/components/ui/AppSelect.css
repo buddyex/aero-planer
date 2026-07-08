@@ -109,6 +109,14 @@
   cursor: not-allowed;
 }
 
+.app-select__option--blocked {
+  color: #f87171;
+}
+
+.app-select__option--blocked.app-select__option--selected {
+  color: #fca5a5;
+}
+
 .app-select__menu::-webkit-scrollbar {
   width: 6px;
 }

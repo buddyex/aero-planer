@@ -30,6 +30,16 @@
   overflow: hidden;
 }
 
+.app-layout__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(2, 6, 23, 0.55);
+  border: none;
+  cursor: pointer;
+  animation: fade-in 0.2s ease;
+}
+
 .app-layout__content {
   flex: 1;
   min-height: 0;
@@ -38,6 +48,12 @@
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   animation: fade-in 0.4s ease;
+}
+
+@media (max-width: 1023px) {
+  .app-layout__content {
+    padding: 1rem;
+  }
 }
 
 @keyframes fade-in {

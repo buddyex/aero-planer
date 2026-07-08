@@ -1,6 +1,11 @@
 const { v4: uuidv4 } = require('uuid');
 const { get, all, run } = require('../db/pool');
 const rbac = require('../lib/rbac');
+const {
+  validateSectorCreate,
+  validateSectorBoundary,
+  validateManualWeather,
+} = require('../lib/validate');
 const { logAction } = require('./audit.service');
 const kmlService = require('./kml.service');
 const { fetchWeatherCascade, OfflineWeatherError } = require('../lib/weather-cascade-service');
@@ -40,6 +45,10 @@ async function createSector(sessionOperatorId, sessionRole, sectorName, centerLa
   if (!rbac.PERMISSIONS.sectorWrite.includes(sessionRole)) {
     return { ok: false, error: 'Доступ запрещён.' };
   }
+
+  const validation = validateSectorCreate(sectorName, centerLat, centerLon, radiusKm);
+  if (!validation.ok) return validation;
+
   try {
     const result = await run(
       `INSERT INTO sectors (sector_name, center_lat, center_lon, radius_km, boundary_polygon, shape_type, is_active)
@@ -65,6 +74,13 @@ async function updateSectorBoundary(sessionOperatorId, sessionRole, sectorId, pa
   if (!rbac.PERMISSIONS.sectorWrite.includes(sessionRole)) {
     return { ok: false, error: 'Доступ запрещён.' };
   }
+
+  const validation = validateSectorBoundary(payload);
+  if (!validation.ok) return validation;
+
+  const existing = await get(`SELECT id FROM sectors WHERE id = ? AND ${ACTIVE_SECTOR_SQL}`, [sectorId]);
+  if (!existing) return { ok: false, error: 'Сектор не найден.' };
+
   await run(
     `UPDATE sectors SET center_lat=?, center_lon=?, radius_km=?, boundary_polygon=?, shape_type=? WHERE id=?`,
     [
@@ -92,6 +108,9 @@ async function deleteSector(sessionOperatorId, sessionRole, sectorId) {
 async function importSectorsFromKmlContent(kmlText, sessionOperatorId, sessionRole) {
   if (!rbac.PERMISSIONS.sectorWrite.includes(sessionRole)) {
     return { ok: false, error: 'Доступ запрещён.' };
+  }
+  if (!kmlText?.trim()) {
+    return { ok: false, error: 'Укажите содержимое KML-файла.' };
   }
   const placemarks = kmlService.parseKmlContent(kmlText);
   const imported = [];
@@ -128,13 +147,26 @@ async function exportSectorsKml(sectorId = null) {
 
 async function exportMissionKml(missionId) {
   const mission = await get(
-    'SELECT id, title, sector_id, route_geometry FROM missions WHERE id = ?',
+    `SELECT m.id, m.title, m.sector_id, m.route_geometry,
+            d.name AS drone_name, d.serial_number AS drone_serial,
+            o.full_name AS operator_name
+     FROM missions m
+     INNER JOIN drones d ON d.id = m.drone_id
+     INNER JOIN operators o ON o.id = m.operator_id
+     WHERE m.id = ?`,
     [missionId],
   );
   if (!mission) return { ok: false, error: 'Миссия не найдена.' };
   const sector = await get('SELECT * FROM sectors WHERE id = ?', [mission.sector_id]);
   if (!sector) return { ok: false, error: 'Сектор не найден.' };
-  const kml = kmlService.exportMissionToKml(sector, mission.title, mission.route_geometry);
+  const missionMeta = {
+    id: mission.id,
+    title: mission.title,
+    droneName: mission.drone_name,
+    droneSerial: mission.drone_serial,
+    operatorName: mission.operator_name,
+  };
+  const kml = kmlService.exportMissionToKml(sector, missionMeta, mission.route_geometry);
   return { ok: true, data: kml };
 }
 
@@ -293,6 +325,13 @@ async function insertManualWeather(sessionOperatorId, sessionRole, sectorId, win
   if (!rbac.PERMISSIONS.manualWeather.includes(sessionRole)) {
     return { ok: false, error: 'Доступ запрещён.' };
   }
+
+  const validation = validateManualWeather(sectorId, windSpeed, temperature, precipitation);
+  if (!validation.ok) return validation;
+
+  const sector = await get(`SELECT id FROM sectors WHERE id = ? AND ${ACTIVE_SECTOR_SQL}`, [sectorId]);
+  if (!sector) return { ok: false, error: 'Сектор не найден.' };
+
   const id = uuidv4();
   await run(
     `INSERT INTO weather_logs (id, sector_id, wind_speed, temperature, precipitation, weather_source, timestamp, sync_status)

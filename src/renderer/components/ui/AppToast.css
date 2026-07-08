@@ -26,6 +26,12 @@
   box-shadow: 0 12px 40px var(--risk-high-glow), var(--glass-shadow);
 }
 
+.app-toast--info {
+  border: 1px solid rgba(59, 130, 246, 0.45);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(30, 41, 59, 0.95));
+  box-shadow: 0 12px 40px rgba(59, 130, 246, 0.2), var(--glass-shadow);
+}
+
 .app-toast__icon {
   flex-shrink: 0;
   width: 1.5rem;
@@ -47,12 +53,65 @@
   color: var(--risk-high);
 }
 
+.app-toast--info .app-toast__icon {
+  color: #2563eb;
+  background: rgba(59, 130, 246, 0.2);
+}
+
 .app-toast__text {
   flex: 1;
   margin: 0;
   font-size: 0.875rem;
   line-height: 1.45;
   color: var(--text-primary);
+}
+
+.app-toast__content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.app-toast__timer {
+  position: relative;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.app-toast__timer-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.55);
+  transition: width 1s linear;
+}
+
+.app-toast--info .app-toast__timer-bar {
+  background: rgba(59, 130, 246, 0.85);
+}
+
+.app-toast--success .app-toast__timer-bar {
+  background: rgba(34, 197, 94, 0.85);
+}
+
+.app-toast--error .app-toast__timer-bar {
+  background: rgba(239, 68, 68, 0.85);
+}
+
+.app-toast__timer-label {
+  position: absolute;
+  right: 0;
+  top: -1.15rem;
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.app-toast--timed {
+  padding-bottom: 0.85rem;
 }
 
 .app-toast__close {
@@ -82,4 +141,25 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.mission-toast-stack {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: none;
+}
+
+.mission-toast-stack__item {
+  pointer-events: auto;
+}
+
+.mission-toast-stack__item .app-toast {
+  position: relative;
+  top: auto;
+  right: auto;
 }

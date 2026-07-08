@@ -28,6 +28,7 @@ export function CreateSectorModal({
   const [lon, setLon] = useState(DEFAULT_LON);
   const [radius, setRadius] = useState('20');
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const onCloseRef = useRef(onClose);
@@ -36,6 +37,7 @@ export function CreateSectorModal({
   const handleClose = useCallback(() => {
     setName('');
     setError(null);
+    setFieldErrors({});
     blurLeafletMaps();
     onCloseRef.current();
     requestAnimationFrame(() => purgeOrphanModalNodes('.create-sector-modal'));
@@ -49,6 +51,7 @@ export function CreateSectorModal({
 
     setName('');
     setError(null);
+    setFieldErrors({});
     setLat(initialLat != null ? initialLat.toFixed(4) : DEFAULT_LAT);
     setLon(initialLon != null ? initialLon.toFixed(4) : DEFAULT_LON);
     setRadius('20');
@@ -78,16 +81,42 @@ export function CreateSectorModal({
 
   if (!open) return null;
 
+  const clearFieldError = (key: string) => {
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
+    setFieldErrors({});
+
+    const errors: Record<string, string> = {};
+    if (!name.trim()) {
+      errors.name = 'Укажите название сектора.';
+    }
 
     const latitude = Number(String(lat).replace(',', '.'));
     const longitude = Number(String(lon).replace(',', '.'));
+    const radiusKm = Number(radius);
 
     const validation = validateSectorCoords(latitude, longitude);
     if (!validation.ok) {
-      setError(validation.message ?? 'Некорректные координаты.');
+      const message = validation.message ?? 'Некорректные координаты.';
+      errors.lat = message;
+      errors.lon = message;
+    }
+
+    if (!Number.isFinite(radiusKm) || radiusKm < 5 || radiusKm > 60) {
+      errors.radius = 'Радиус должен быть от 5 до 60 км.';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
@@ -134,7 +163,7 @@ export function CreateSectorModal({
           В KML/Google Earth порядок координат: <strong>долгота, широта</strong>.
         </p>
 
-        <div className="form-field">
+        <div className={`form-field${fieldErrors.name ? ' form-field--invalid' : ''}`}>
           <label className="form-field__label" htmlFor="sector-name">
             Название сектора
           </label>
@@ -143,15 +172,19 @@ export function CreateSectorModal({
             id="sector-name"
             className="form-field__input"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              clearFieldError('name');
+              setName(e.target.value);
+            }}
             placeholder="Сектор Малая Пурга"
             required
             autoComplete="off"
           />
+          {fieldErrors.name && <p className="form-field__error">{fieldErrors.name}</p>}
         </div>
 
         <div className="create-sector-modal__row">
-          <div className="form-field">
+          <div className={`form-field${fieldErrors.lat ? ' form-field--invalid' : ''}`}>
             <label className="form-field__label" htmlFor="sector-lat">
               Широта (°)
             </label>
@@ -161,13 +194,18 @@ export function CreateSectorModal({
               inputMode="decimal"
               className="form-field__input"
               value={lat}
-              onChange={(e) => setLat(e.target.value)}
+              onChange={(e) => {
+                clearFieldError('lat');
+                clearFieldError('lon');
+                setLat(e.target.value);
+              }}
               placeholder="56.8500"
               required
               autoComplete="off"
             />
+            {fieldErrors.lat && <p className="form-field__error">{fieldErrors.lat}</p>}
           </div>
-          <div className="form-field">
+          <div className={`form-field${fieldErrors.lon ? ' form-field--invalid' : ''}`}>
             <label className="form-field__label" htmlFor="sector-lon">
               Долгота (°)
             </label>
@@ -177,11 +215,16 @@ export function CreateSectorModal({
               inputMode="decimal"
               className="form-field__input"
               value={lon}
-              onChange={(e) => setLon(e.target.value)}
+              onChange={(e) => {
+                clearFieldError('lat');
+                clearFieldError('lon');
+                setLon(e.target.value);
+              }}
               placeholder="53.2100"
               required
               autoComplete="off"
             />
+            {fieldErrors.lon && <p className="form-field__error">{fieldErrors.lon}</p>}
           </div>
         </div>
 
@@ -191,7 +234,7 @@ export function CreateSectorModal({
           </p>
         )}
 
-        <div className="form-field">
+        <div className={`form-field${fieldErrors.radius ? ' form-field--invalid' : ''}`}>
           <label className="form-field__label" htmlFor="sector-radius">
             Радиус зоны (км)
           </label>
@@ -202,9 +245,13 @@ export function CreateSectorModal({
             max="60"
             className="form-field__input"
             value={radius}
-            onChange={(e) => setRadius(e.target.value)}
+            onChange={(e) => {
+              clearFieldError('radius');
+              setRadius(e.target.value);
+            }}
             required
           />
+          {fieldErrors.radius && <p className="form-field__error">{fieldErrors.radius}</p>}
         </div>
 
         {error && (

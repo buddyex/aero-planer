@@ -205,6 +205,7 @@ export interface Battery {
   capacity: number;
   cycle_count: number;
   status: 'Отлично' | 'Требуется проверка' | 'Списано';
+  on_active_mission?: boolean;
 }
 
 export interface BatteryInspectionLog {

@@ -5,6 +5,7 @@ export interface AppSelectOption {
   value: string | number;
   label: string;
   disabled?: boolean;
+  variant?: 'default' | 'blocked';
 }
 
 interface AppSelectProps {
@@ -90,7 +91,7 @@ export function AppSelect({
                   type="button"
                   role="option"
                   aria-selected={isSelected}
-                  className={`app-select__option${isSelected ? ' app-select__option--selected' : ''}`}
+                  className={`app-select__option${isSelected ? ' app-select__option--selected' : ''}${option.variant === 'blocked' ? ' app-select__option--blocked' : ''}`}
                   disabled={option.disabled}
                   onClick={() => !option.disabled && pick(String(option.value))}
                 >

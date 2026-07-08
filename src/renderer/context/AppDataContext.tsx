@@ -24,14 +24,14 @@ import type {
   WeatherProvider,
   WeatherSource,
 } from '../types';
-import type { SectorRiskRow } from '../../shared/types/api.types';
+import type { SectorRiskRow, MissionRow } from '../../shared/types/api.types';
 import { countDronesByStatus, mapDroneRow } from '../utils/drones';
 import { isDroneBlockedByFlightHours } from '../utils/maintenanceRules';
+import { mapMissionRow } from '../utils/missions';
 import {
   calculateRisk,
   formatDateTime,
   formatDisplayTime,
-  normalizeDateTime,
 } from '../utils/weather';
 import { filterMissionsForUser } from '../utils/permissions';
 import { restorePageInput } from '../utils/mapFocus';
@@ -144,6 +144,14 @@ function formatSourcesLabel(sources?: string[]): string {
   return sources.join(', ');
 }
 
+const MISSION_STATUS_REFETCH_DRONES = new Set<Mission['status']>([
+  'Ожидает утверждения',
+  'К выполнению',
+  'Выполняется',
+  'Завершено',
+  'Отклонено',
+]);
+
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const api = useApi();
   const { user } = useAuth();
@@ -172,14 +180,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const refreshDashboardStatsFromDb = useCallback(async () => {
     const result = await api.getDashboardStats();
     if (result.ok && result.data) {
-      const row = result.data as Record<string, unknown>;
+      const row = result.data;
       setDashboardStats({
         planned_missions: Number(row.planned_missions ?? 0),
         pending_approvals: Number(row.pending_approvals ?? 0),
         active_missions: Number(row.active_missions ?? 0),
         completed_missions: Number(row.completed_missions ?? 0),
         drones_ready: Number(row.drones_ready ?? 0),
-        drones_in_air: Number(row.drones_in_air ?? row.drones_in_flight ?? 0),
+        drones_in_air: Number(row.drones_in_air ?? 0),
         drones_planned: Number(row.drones_planned ?? 0),
         drones_on_maintenance: Number(row.drones_on_maintenance ?? 0),
         drones_in_repair: Number(row.drones_in_repair ?? 0),
@@ -193,8 +201,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const refreshDronesFromDb = useCallback(async () => {
     const result = await api.getDrones();
     if (result.ok && result.data) {
-      const rows = result.data as unknown as Array<Record<string, unknown>>;
-      setDrones(rows.map(mapDroneRow));
+      setDrones(result.data.map(mapDroneRow));
     }
   }, [api]);
 
@@ -213,12 +220,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const refreshOperatorsFromDb = useCallback(async () => {
     const result = await api.getAllOperators();
     if (result.ok && result.data) {
-      const rows = result.data as unknown as Array<Record<string, unknown>>;
       setOperators(
-        rows.map((row) => ({
-          id: Number(row.id),
-          full_name: String(row.full_name),
-          login: row.login ? String(row.login) : undefined,
+        result.data.map((row) => ({
+          id: row.id,
+          full_name: row.full_name,
+          login: row.login,
           role: row.role as Operator['role'],
           duty_status: (row.duty_status as Operator['duty_status']) ?? 'Свободен',
         })),
@@ -229,35 +235,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const refreshMissionsFromDb = useCallback(async () => {
     const result = await api.getMissions();
     if (result.ok && result.data) {
-      const rows = result.data as Array<Record<string, unknown>>;
-      setMissions(
-        rows.map((row) => ({
-          id: String(row.id),
-          title: String(row.title),
-          operator_id: Number(row.operator_id),
-          drone_id: Number(row.drone_id),
-          sector_id: Number(row.sector_id),
-          start_time: normalizeDateTime(row.start_time),
-          end_time: normalizeDateTime(row.end_time),
-          status: row.status as Mission['status'],
-          creator_id: row.creator_id != null ? String(row.creator_id) : null,
-          creator_name: row.creator_name ? String(row.creator_name) : undefined,
-          approved_by_id: row.approved_by_id != null ? String(row.approved_by_id) : null,
-          approver_name: row.approver_name ? String(row.approver_name) : undefined,
-          operator_name: row.operator_name ? String(row.operator_name) : undefined,
-          drone_serial: row.drone_serial ? String(row.drone_serial) : undefined,
-          drone_name: row.drone_name ? String(row.drone_name) : undefined,
-          battery_id: row.battery_id ? String(row.battery_id) : undefined,
-          battery_serial: row.battery_serial ? String(row.battery_serial) : undefined,
-          battery_type: row.battery_type ? String(row.battery_type) : undefined,
-          battery_capacity:
-            row.battery_capacity != null ? Number(row.battery_capacity) : undefined,
-          battery_cycle_count:
-            row.battery_cycle_count != null ? Number(row.battery_cycle_count) : undefined,
-          sector_name: row.sector_name ? String(row.sector_name) : undefined,
-          sector_risk_level: row.sector_risk_level as Mission['sector_risk_level'],
-        })),
-      );
+      setMissions(result.data.map(mapMissionRow));
     }
   }, [api]);
 
@@ -304,9 +282,21 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!socket || !hasBackend) return;
 
-    const onMissionChange = () => {
-      void refreshMissionsFromDb();
-      void refreshDashboardStatsFromDb();
+    const onMissionChange = (payload: MissionRow) => {
+      const mission = mapMissionRow(payload);
+      setMissions((prev) => {
+        const exists = prev.some((m) => m.id === mission.id);
+        if (exists) {
+          return prev.map((m) => (m.id === mission.id ? { ...m, ...mission } : m));
+        }
+        return [...prev, mission];
+      });
+
+      if (MISSION_STATUS_REFETCH_DRONES.has(mission.status)) {
+        void refreshDronesFromDb();
+        void refreshOperatorsFromDb();
+        void refreshDashboardStatsFromDb();
+      }
     };
 
     socket.on('mission:statusChanged', onMissionChange);
@@ -316,7 +306,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       socket.off('mission:statusChanged', onMissionChange);
       socket.off('mission:created', onMissionChange);
     };
-  }, [socket, hasBackend, refreshMissionsFromDb, refreshDashboardStatsFromDb]);
+  }, [
+    socket,
+    hasBackend,
+    refreshDronesFromDb,
+    refreshOperatorsFromDb,
+    refreshDashboardStatsFromDb,
+  ]);
 
   const getDroneById = useCallback((id: number) => drones.find((d) => d.id === id), [drones]);
   const getSectorById = useCallback((id: number) => sectors.find((s) => s.id === id), [sectors]);

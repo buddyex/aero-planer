@@ -77,6 +77,7 @@ export interface BatteryRow {
   capacity: number;
   cycle_count: number;
   status: string;
+  on_active_mission?: boolean;
 }
 
 export interface BatteryInspectionLogRow {
@@ -111,6 +112,63 @@ export interface AuthUserRow {
   full_name: string;
   login: string;
   role: string;
+}
+
+/** Строка списка операторов (GET /operators). */
+export interface OperatorListRow extends AuthUserRow {
+  duty_status: string;
+}
+
+/** Сводка дашборда (GET /dashboard/stats). */
+export interface DashboardStatsRow {
+  planned_missions: number;
+  active_missions: number;
+  completed_missions: number;
+  pending_approvals: number;
+  drones_ready: number;
+  drones_in_air: number;
+  drones_planned: number;
+  drones_on_maintenance: number;
+  drones_in_repair: number;
+  drones_in_diagnostics: number;
+  high_risk_sectors: number;
+  operators_in_mission: number;
+}
+
+/** Строка миссии из JOIN-запроса (GET /missions, WebSocket mission:*). */
+export interface MissionRow {
+  id: string;
+  title: string;
+  operator_id: number;
+  drone_id: number;
+  battery_id: string;
+  sector_id: number;
+  start_time: string;
+  end_time: string;
+  status: string;
+  creator_id?: number | string | null;
+  approved_by_id?: number | string | null;
+  route_geometry?: string | null;
+  flight_radius_m?: number;
+  flight_altitude_m?: number;
+  sync_status?: number;
+  drone_serial?: string;
+  drone_name?: string;
+  drone_status?: string;
+  drone_model_name?: string;
+  drone_max_wind?: number;
+  battery_serial?: string;
+  battery_type?: string;
+  battery_capacity?: number;
+  battery_cycle_count?: number;
+  operator_name?: string;
+  operator_role?: string;
+  creator_name?: string;
+  creator_role?: string;
+  approver_name?: string;
+  approver_role?: string;
+  sector_name?: string;
+  sector_risk_level?: string;
 }
 
 export interface SystemHealthData {

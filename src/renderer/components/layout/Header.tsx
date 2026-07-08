@@ -18,10 +18,11 @@ function formatDateTime(date: Date): string {
 interface HeaderProps {
   onOpenComms?: () => void;
   hasUnread?: boolean;
+  sidebarOpen?: boolean;
   onMenuToggle?: () => void;
 }
 
-export function Header({ onOpenComms, hasUnread = false, onMenuToggle }: HeaderProps) {
+export function Header({ onOpenComms, hasUnread = false, sidebarOpen = false, onMenuToggle }: HeaderProps) {
   const { user, shiftStartTime } = useAuth();
   const [now, setNow] = useState(() => new Date());
 
@@ -35,9 +36,10 @@ export function Header({ onOpenComms, hasUnread = false, onMenuToggle }: HeaderP
       <div className="header__left">
         <button
           type="button"
-          className="header__menu-btn md:hidden"
+          className="header__menu-btn"
           onClick={onMenuToggle}
-          aria-label="Открыть меню"
+          aria-label={sidebarOpen ? 'Закрыть меню' : 'Открыть меню'}
+          aria-expanded={sidebarOpen}
         >
           ☰
         </button>

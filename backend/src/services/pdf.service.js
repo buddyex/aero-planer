@@ -4,17 +4,21 @@ const path = require('path');
 const { all } = require('../db/pool');
 const { getMissionForPdf } = require('./mission.service');
 
-const FONT_PATH = path.join(__dirname, '../../assets/fonts/Arial.ttf');
-const FONT_NAME = 'ArialCyr';
+const FONT_REGULAR = path.join(__dirname, '../../assets/fonts/Roboto-Regular.ttf');
+const FONT_BOLD = path.join(__dirname, '../../assets/fonts/Roboto-Bold.ttf');
+const FONT_ARIAL = path.join(__dirname, '../../assets/fonts/Arial.ttf');
+
+const MARGIN = 50;
+const CONTENT_WIDTH = 595.28 - MARGIN * 2;
 
 function formatRole(name, role) {
   if (!name?.trim()) return '—';
   return role ? `${name.trim()} (${role})` : name.trim();
 }
 
-function formatBatteryLine(row) {
-  if (!row.battery_serial) return '—';
-  return `АКБ: ${row.battery_serial} — ${row.battery_type ?? '—'} — ${row.battery_capacity ?? '—'} мАч (Номер цикла: ${row.battery_cycle_count ?? 0})`;
+function formatValue(value, suffix = '') {
+  if (value == null || value === '') return '—';
+  return `${value}${suffix}`;
 }
 
 function missionDayKey(startTime) {
@@ -43,13 +47,66 @@ async function resolveFlightSheetNumber(missionId, startTime) {
   return `ПЛ-${formatMissionDayForSheet(startTime)}-${String(seq).padStart(3, '0')}`;
 }
 
-function registerPdfFont(doc) {
-  if (fs.existsSync(FONT_PATH)) {
-    doc.registerFont(FONT_NAME, FONT_PATH);
-    doc.font(FONT_NAME);
-    return;
+function registerPdfFonts(doc) {
+  if (fs.existsSync(FONT_REGULAR)) {
+    doc.registerFont('Roboto', FONT_REGULAR);
+    if (fs.existsSync(FONT_BOLD)) {
+      doc.registerFont('Roboto-Bold', FONT_BOLD);
+    }
+    return { regular: 'Roboto', bold: fs.existsSync(FONT_BOLD) ? 'Roboto-Bold' : 'Roboto' };
   }
-  doc.font('Helvetica');
+  if (fs.existsSync(FONT_ARIAL)) {
+    doc.registerFont('ArialCyr', FONT_ARIAL);
+    return { regular: 'ArialCyr', bold: 'ArialCyr' };
+  }
+  return { regular: 'Helvetica', bold: 'Helvetica-Bold' };
+}
+
+function drawSection(doc, fonts, title, lines) {
+  const startY = doc.y;
+  doc
+    .font(fonts.bold)
+    .fontSize(11)
+    .fillColor('#1a1a1a')
+    .text(title, MARGIN, startY, { width: CONTENT_WIDTH });
+
+  let y = doc.y + 4;
+  doc.font(fonts.regular).fontSize(10).fillColor('#333333');
+
+  for (const line of lines) {
+    doc.text(line, MARGIN + 8, y, { width: CONTENT_WIDTH - 16 });
+    y = doc.y + 2;
+  }
+
+  const boxHeight = y - startY + 8;
+  doc
+    .rect(MARGIN, startY - 4, CONTENT_WIDTH, boxHeight)
+    .lineWidth(0.5)
+    .strokeColor('#cccccc')
+    .stroke();
+
+  doc.y = startY + boxHeight + 10;
+}
+
+function drawSignatureBlock(doc, fonts) {
+  doc.moveDown(1);
+  doc.font(fonts.regular).fontSize(10).fillColor('#333333');
+  const lineY = doc.y + 18;
+  doc.text('Подпись оператора', MARGIN, lineY - 14);
+  doc
+    .moveTo(MARGIN + 120, lineY)
+    .lineTo(MARGIN + 280, lineY)
+    .strokeColor('#666666')
+    .stroke();
+
+  doc.text('Подпись диспетчера', MARGIN + 300, lineY - 14);
+  doc
+    .moveTo(MARGIN + 430, lineY)
+    .lineTo(MARGIN + CONTENT_WIDTH, lineY)
+    .strokeColor('#666666')
+    .stroke();
+
+  doc.y = lineY + 20;
 }
 
 async function buildFlightSheetPdf(missionId) {
@@ -57,56 +114,65 @@ async function buildFlightSheetPdf(missionId) {
   if (!row) return null;
 
   const sheetNumber = await resolveFlightSheetNumber(missionId, row.start_time);
+  const generatedAt = new Date().toLocaleString('ru-RU');
+  const droneModel = row.drone_model_name ?? row.drone_name ?? '—';
 
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const doc = new PDFDocument({ size: 'A4', margin: MARGIN });
     const chunks = [];
 
     doc.on('data', (chunk) => chunks.push(chunk));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    registerPdfFont(doc);
+    const fonts = registerPdfFonts(doc);
+    doc.font(fonts.regular);
 
-    doc.fontSize(18).text(`ПОЛЕТНЫЙ ЛИСТ ${sheetNumber}`, { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(11);
-    doc.text(`Задание сформировал: ${formatRole(row.creator_name, row.creator_role)}`);
-    doc.text(`Задание утвердил: ${formatRole(row.approver_name, row.approver_role)}`);
-    doc.text(`Дата и время формирования: ${new Date().toLocaleString('ru-RU')}`);
-    doc.moveDown();
+    doc
+      .font(fonts.bold)
+      .fontSize(18)
+      .fillColor('#0d2137')
+      .text(`ПОЛЕТНЫЙ ЛИСТ ${sheetNumber}`, { align: 'center' });
+    doc.moveDown(0.5);
+    doc
+      .font(fonts.regular)
+      .fontSize(9)
+      .fillColor('#666666')
+      .text(`ID миссии: ${row.id}`, { align: 'center' });
+    doc.moveDown(1);
 
-    doc.fontSize(12).text('Данные миссии', { underline: true });
-    doc.fontSize(10);
-    doc.text(`Сектор: ${row.sector_name ?? '—'}`);
-    doc.text(`Модель БПЛА: ${row.drone_name ?? '—'}`);
-    doc.text(`Серийный номер: ${row.drone_serial ?? '—'}`);
-    doc.text(`Цель миссии: ${row.title}`);
-    doc.text(`Начало: ${row.start_time ?? '—'}`);
-    doc.text(`Окончание: ${row.end_time ?? '—'}`);
-    doc.moveDown();
+    drawSection(doc, fonts, 'Шапка', [
+      `Дата формирования: ${generatedAt}`,
+      `Статус: ${row.status ?? '—'}`,
+      `Сектор: ${row.sector_name ?? '—'}`,
+      `Цель миссии: ${row.title ?? '—'}`,
+      `Начало: ${row.start_time ?? '—'}    Окончание: ${row.end_time ?? '—'}`,
+    ]);
 
-    doc.fontSize(12).text('Аудит метеоусловий', { underline: true });
-    doc.fontSize(10);
-    doc.text(`Температура: ${row.temperature != null ? `${row.temperature} °C` : '—'}`);
-    doc.text(`Скорость ветра: ${row.wind_speed != null ? `${row.wind_speed} м/с` : '—'}`);
-    doc.text(`Осадки: ${row.precipitation ?? '—'}`);
-    doc.text(`Источник данных: ${row.weather_source ?? '—'}`);
-    doc.moveDown();
+    drawSection(doc, fonts, 'Персонал', [
+      `Создал: ${formatRole(row.creator_name, row.creator_role)}`,
+      `Назначен: ${formatRole(row.operator_name, row.operator_role)}`,
+      `Утвердил: ${formatRole(row.approver_name, row.approver_role)}`,
+    ]);
 
-    doc.fontSize(12).text('Данные системы питания', { underline: true });
-    doc.fontSize(10).text(formatBatteryLine(row));
-    doc.moveDown();
+    drawSection(doc, fonts, 'Оборудование', [
+      `Дрон — модель: ${droneModel}`,
+      `Дрон — серийный номер: ${formatValue(row.drone_serial)}`,
+      `Дрон — макс. ветер: ${formatValue(row.drone_max_wind, ' м/с')}`,
+      `АКБ — тип: ${formatValue(row.battery_type)}`,
+      `АКБ — серийный номер: ${formatValue(row.battery_serial)}`,
+      `АКБ — ёмкость: ${formatValue(row.battery_capacity, ' мАч')}`,
+      `АКБ — циклы: ${formatValue(row.battery_cycle_count)}`,
+    ]);
 
-    doc.fontSize(12).text('Контроль безопасности', { underline: true });
-    doc.fontSize(10).text(
-      'Проверка Geofencing: Конфликтов с No-Fly зонами на момент старта не обнаружено. Полёт санкционирован.',
-    );
-    doc.moveDown();
+    drawSection(doc, fonts, 'Метеоусловия', [
+      `Температура: ${formatValue(row.temperature, ' °C')}`,
+      `Ветер: ${formatValue(row.wind_speed, ' м/с')}`,
+      `Осадки: ${formatValue(row.precipitation)}`,
+      `Источник данных: ${formatValue(row.weather_source)}`,
+    ]);
 
-    doc.text(`Статус миссии: ${row.status}`);
-    doc.text(`Оператор БПЛА: ${row.operator_name ?? '—'}`);
-    doc.text(`Руководитель полётов: ${formatRole(row.approver_name, row.approver_role)}`);
+    drawSignatureBlock(doc, fonts);
 
     doc.end();
   });

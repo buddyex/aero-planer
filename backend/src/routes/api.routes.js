@@ -14,26 +14,18 @@ const systemService = require('../services/system.service');
 const pdfService = require('../services/pdf.service');
 const { requireAuth } = require('../middleware/auth');
 
-function createApiRouter(io) {
+function createApiRouter() {
   const router = express.Router();
-
-  function emitMission(event, payload) {
-    if (io) io.emit(event, payload);
-  }
-
-  function emitToRoles(roles, event, payload) {
-    if (!io) return;
-    for (const role of roles) {
-      io.to(`role:${role}`).emit(event, payload);
-    }
-  }
 
   // Auth
   router.post('/auth/login', async (req, res, next) => {
     try {
       const { login, pin } = req.body ?? {};
       const result = await authService.loginOperator(login, pin);
-      if (!result.ok) return res.status(401).json(result);
+      if (!result.ok) {
+        const status = result.error === 'Укажите логин и PIN-код.' ? 400 : 401;
+        return res.status(status).json(result);
+      }
 
       res.cookie(config.jwt.refreshCookie, result.refreshToken, {
         httpOnly: true,
@@ -78,27 +70,16 @@ function createApiRouter(io) {
 
   router.post('/missions', requireAuth, async (req, res) => {
     const result = await missionService.createMission(req.body, req.operatorId, req.user.role);
-    if (result.ok && result.notifyApproval) {
-      emitToRoles(['Руководитель', 'Администратор'], 'notification:toast', {
-        type: 'mission_pending',
-        message: 'Новая миссия ожидает согласования',
-        missionId: result.data.id,
-      });
-      emitMission('mission:created', result.data);
-    }
-    if (result.ok) emitMission('mission:statusChanged', result.data);
     res.status(result.ok ? 201 : 400).json(result);
   });
 
   router.put('/missions/:id/approve', requireAuth, async (req, res) => {
     const result = await missionService.approveMission(req.params.id, req.operatorId);
-    if (result.ok) emitMission('mission:statusChanged', result.data);
     res.status(result.ok ? 200 : 400).json(result);
   });
 
   router.put('/missions/:id/reject', requireAuth, async (req, res) => {
     const result = await missionService.rejectMission(req.params.id, req.operatorId);
-    if (result.ok) emitMission('mission:statusChanged', result.data);
     res.status(result.ok ? 200 : 400).json(result);
   });
 
@@ -110,7 +91,6 @@ function createApiRouter(io) {
       req.operatorId,
       req.user.role,
     );
-    if (result.ok) emitMission('mission:statusChanged', result.data);
     res.status(result.ok ? 200 : 400).json(result);
   });
 
@@ -121,7 +101,6 @@ function createApiRouter(io) {
       req.operatorId,
       req.user.role,
     );
-    if (result.ok) emitMission('mission:statusChanged', result.data);
     res.status(result.ok ? 200 : 400).json(result);
   });
 
@@ -225,7 +204,7 @@ function createApiRouter(io) {
 
   router.put('/drones/:id', requireAuth, async (req, res) => {
     const result = await droneService.updateDrone(req.operatorId, req.user.role, req.params.id, req.body);
-    res.json(result);
+    res.status(result.ok ? 200 : 400).json(result);
   });
 
   router.delete('/drones/:id', requireAuth, async (req, res) => {
@@ -252,7 +231,8 @@ function createApiRouter(io) {
   });
 
   router.put('/sectors/:id/boundary', requireAuth, async (req, res) => {
-    res.json(await sectorService.updateSectorBoundary(req.operatorId, req.user.role, req.params.id, req.body));
+    const result = await sectorService.updateSectorBoundary(req.operatorId, req.user.role, req.params.id, req.body);
+    res.status(result.ok ? 200 : 400).json(result);
   });
 
   router.delete('/sectors/:id', requireAuth, async (req, res) => {
@@ -265,7 +245,7 @@ function createApiRouter(io) {
       req.operatorId,
       req.user.role,
     );
-    res.json(result);
+    res.status(result.ok ? 200 : 400).json(result);
   });
 
   router.get('/sectors/export-kml', requireAuth, async (req, res) => {
@@ -282,25 +262,26 @@ function createApiRouter(io) {
 
   router.post('/weather/sync/:sectorId', requireAuth, async (req, res) => {
     const { lat, lon } = req.body ?? {};
-    res.json(await sectorService.syncWeatherAPI(req.operatorId, req.user.role, req.params.sectorId, lat, lon));
+    const result = await sectorService.syncWeatherAPI(req.operatorId, req.user.role, req.params.sectorId, lat, lon);
+    res.status(result.ok ? 200 : 400).json(result);
   });
 
   router.post('/weather/sync-all', requireAuth, async (req, res) => {
-    res.json(await sectorService.syncAllSectorsWeather(req.operatorId, req.user.role));
+    const result = await sectorService.syncAllSectorsWeather(req.operatorId, req.user.role);
+    res.status(result.ok ? 200 : 400).json(result);
   });
 
   router.post('/weather/manual', requireAuth, async (req, res) => {
     const { sectorId, windSpeed, temperature, precipitation } = req.body ?? {};
-    res.json(
-      await sectorService.insertManualWeather(
-        req.operatorId,
-        req.user.role,
-        sectorId,
-        windSpeed,
-        temperature,
-        precipitation,
-      ),
+    const result = await sectorService.insertManualWeather(
+      req.operatorId,
+      req.user.role,
+      sectorId,
+      windSpeed,
+      temperature,
+      precipitation,
     );
+    res.status(result.ok ? 200 : 400).json(result);
   });
 
   // Messages
@@ -322,10 +303,6 @@ function createApiRouter(io) {
       receiverId,
       text,
     );
-    if (result.ok && io) {
-      io.to(`user:${receiverId}`).emit('chat:message', result.data);
-      io.to(`user:${req.operatorId}`).emit('chat:message', result.data);
-    }
     res.status(result.ok ? 201 : 400).json(result);
   });
 
@@ -348,7 +325,8 @@ function createApiRouter(io) {
   });
 
   router.put('/operators/:id', requireAuth, async (req, res) => {
-    res.json(await operatorService.updateOperator(req.operatorId, req.user.role, parseInt(req.params.id, 10), req.body));
+    const result = await operatorService.updateOperator(req.operatorId, req.user.role, parseInt(req.params.id, 10), req.body);
+    res.status(result.ok ? 200 : 400).json(result);
   });
 
   router.delete('/operators/:id', requireAuth, async (req, res) => {
@@ -388,7 +366,8 @@ function createApiRouter(io) {
   });
 
   router.post('/maintenance/complete/:droneId', requireAuth, async (req, res) => {
-    res.json(await maintenanceService.completeMaintenance(req.operatorId, req.user.role, parseInt(req.params.droneId, 10)));
+    const result = await maintenanceService.completeMaintenance(req.operatorId, req.user.role, parseInt(req.params.droneId, 10));
+    res.status(result.ok ? 200 : 400).json(result);
   });
 
   // Dashboard

@@ -1,6 +1,7 @@
 const http = require('http');
 const path = require('path');
 const express = require('express');
+const helmet = require('helmet');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { Server } = require('socket.io');
@@ -8,6 +9,7 @@ const config = require('./config');
 const { pool } = require('./db/pool');
 const { createApiRouter } = require('./routes/api.routes');
 const { initSockets } = require('./sockets/index');
+const { initEmitter } = require('./sockets/emitter');
 const { errorHandler } = require('./middleware/errorHandler');
 
 async function verifyDatabaseConnection() {
@@ -36,12 +38,18 @@ const io = new Server(server, {
   },
 });
 
+initEmitter(io);
 initSockets(io);
 
+app.use(
+  helmet({
+    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+  }),
+);
 app.use(cors({ origin: config.corsOrigin, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
-app.use('/api', createApiRouter(io));
+app.use('/api', createApiRouter());
 app.use(errorHandler);
 
 verifyDatabaseConnection().then(() => {

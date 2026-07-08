@@ -90,7 +90,7 @@ export function MapLocationSearch({ onSearchResult }: MapLocationSearchProps) {
         />
         <button
           type="submit"
-          className="btn btn--ghost map-location-search__btn"
+          className="btn btn--secondary map-location-search__btn"
           disabled={isSearching || !query.trim()}
         >
           {isSearching ? '…' : 'Найти'}

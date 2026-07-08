@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Circle, MapContainer, Polygon, Popup, useMapEvents } from 'react-leaflet';
+import { Circle, MapContainer, Polygon, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { useAppData } from '../../context/AppDataContext';
 import { useAuth } from '../../context/AuthContext';
 import type { CreateSectorPayload, RiskLevel, Sector } from '../../types';
@@ -39,6 +39,21 @@ function MapClickHandler({
       onPick(event.latlng.lat, event.latlng.lng);
     },
   });
+  return null;
+}
+
+function MapResizeHandler() {
+  const map = useMap();
+
+  useEffect(() => {
+    const invalidate = () => {
+      map.invalidateSize();
+    };
+    invalidate();
+    window.addEventListener('resize', invalidate);
+    return () => window.removeEventListener('resize', invalidate);
+  }, [map]);
+
   return null;
 }
 
@@ -254,31 +269,34 @@ export function SectorMap() {
   return (
     <GlassCard accent className="sector-map-card">
       <div className="sector-map-card__header">
-        <div className="sector-map-card__header-main">
-          <h3 className="sector-map-card__title">Карта секторов полётов</h3>
-          <MapLocationSearch onSearchResult={setFlyTarget} />
+        <div className="sector-map-card__header-top">
+          <h3 className="sector-map-card__title">
+            <span className="sector-map-card__title-full">Карта секторов полётов</span>
+            <span className="sector-map-card__title-short">Карта секторов</span>
+          </h3>
+          <div className="sector-map-card__actions">
+            {canEdit && (
+              <>
+                <button
+                  type="button"
+                  className={`btn btn--ghost sector-map-card__btn${pickMode ? ' sector-map-card__btn--active' : ''}`}
+                  onClick={() => setPickMode((prev) => !prev)}
+                >
+                  {pickMode ? 'Кликните на карту…' : '+ На карте'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--ghost sector-map-card__btn"
+                  onClick={handleImportKml}
+                  disabled={kmlBusy}
+                >
+                  Импорт KML
+                </button>
+              </>
+            )}
+          </div>
         </div>
-        <div className="sector-map-card__actions">
-          {canEdit && (
-            <>
-              <button
-                type="button"
-                className={`btn btn--ghost sector-map-card__btn${pickMode ? ' sector-map-card__btn--active' : ''}`}
-                onClick={() => setPickMode((prev) => !prev)}
-              >
-                {pickMode ? 'Кликните на карту…' : '+ На карте'}
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost sector-map-card__btn"
-                onClick={handleImportKml}
-                disabled={kmlBusy}
-              >
-                Импорт KML
-              </button>
-            </>
-          )}
-        </div>
+        <MapLocationSearch onSearchResult={setFlyTarget} />
       </div>
 
       {actionError && (
@@ -305,6 +323,7 @@ export function SectorMap() {
             className="sector-map"
           >
             <OfflineTileLayer />
+            <MapResizeHandler />
             <MapFlyTo target={flyTarget} />
             <MapClickHandler enabled={pickMode} onPick={handleMapPick} />
             {mappedSectors.map((sector) => (

@@ -4,12 +4,12 @@ const {
 } = require('../backend/src/lib/maintenance-rules');
 
 describe('Maintenance: блокировка по налёту', () => {
-  test('flight_hours = 100 → не заблокирован', () => {
-    expect(isDroneBlockedByFlightHours(100)).toBe(false);
+  test('flight_hours = 100 → заблокирован', () => {
+    expect(isDroneBlockedByFlightHours(100)).toBe(true);
   });
 
-  test('flight_hours = 100.01 → заблокирован', () => {
-    expect(isDroneBlockedByFlightHours(100.01)).toBe(true);
+  test('flight_hours = 99.99 → не заблокирован', () => {
+    expect(isDroneBlockedByFlightHours(99.99)).toBe(false);
   });
 
   test('flight_hours = 150, status На ТО → всё равно заблокирован для полёта', () => {

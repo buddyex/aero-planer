@@ -31,10 +31,11 @@ interface AuthContextValue {
 
 interface SocketContextValue {
   socket: Socket | null;
+  socketConnected: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-const SocketContext = createContext<SocketContextValue>({ socket: null });
+const SocketContext = createContext<SocketContextValue>({ socket: null, socketConnected: false });
 
 function readStoredSession(): StoredSession | null {
   try {
@@ -57,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
   const [isLoading, setIsLoading] = useState(() => Boolean(readStoredSession()?.user));
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [socketConnected, setSocketConnected] = useState(false);
 
   const persistSession = useCallback((nextUser: AuthUser, start: Date) => {
     sessionStorage.setItem(
@@ -104,21 +106,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const userId = user?.id;
-    if (!userId) return;
+    if (!userId) {
+      setSocketConnected(false);
+      return;
+    }
 
     const token = api instanceof HttpDataApi ? api.getAccessToken() : null;
-    if (!token) return;
+    if (!token) {
+      setSocketConnected(false);
+      return;
+    }
 
     const s = io(WS_URL, {
       auth: { token },
       transports: ['websocket', 'polling'],
     });
 
+    const syncAuthToken = () => {
+      if (!(api instanceof HttpDataApi)) return;
+      const nextToken = api.getAccessToken();
+      if (nextToken) {
+        s.auth = { token: nextToken };
+      }
+    };
+
+    const onConnect = () => {
+      setSocketConnected(true);
+    };
+
+    const onConnectError = (err: Error) => {
+      setSocketConnected(false);
+      const errMsg = (err?.message ?? '').toLowerCase();
+      const isAuthRejected =
+        errMsg.includes('unauthorized') || errMsg.includes('invalid') || errMsg.includes('jwt');
+      if (isAuthRejected) {
+        clearSession();
+      }
+    };
+
+    const onDisconnect = (reason: string) => {
+      setSocketConnected(false);
+      if (reason === 'io server disconnect') {
+        syncAuthToken();
+        s.connect();
+      }
+    };
+
+    const onReconnect = () => {
+      syncAuthToken();
+      setSocketConnected(true);
+    };
+
+    s.on('connect', onConnect);
+    s.on('connect_error', onConnectError);
+    s.on('disconnect', onDisconnect);
+    s.io.on('reconnect', onReconnect);
+
     setSocket(s);
     return () => {
+      s.off('connect', onConnect);
+      s.off('connect_error', onConnectError);
+      s.off('disconnect', onDisconnect);
+      s.io.off('reconnect', onReconnect);
       s.disconnect();
+      setSocketConnected(false);
     };
-  }, [user?.id, api]);
+  }, [user?.id, api, clearSession]);
 
   const login = useCallback(
     async (loginName: string, pin: string) => {
@@ -158,7 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user, shiftStartTime, isLoading, login, logout],
   );
 
-  const socketValue = useMemo(() => ({ socket }), [socket]);
+  const socketValue = useMemo(() => ({ socket, socketConnected }), [socket, socketConnected]);
 
   return (
     <AuthContext.Provider value={authValue}>

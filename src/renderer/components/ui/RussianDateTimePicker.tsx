@@ -17,6 +17,7 @@ interface RussianDateTimePickerProps {
   label: string;
   value: RussianDateTimeValue;
   onChange: (value: RussianDateTimeValue) => void;
+  error?: string;
 }
 
 function pad(n: number): string {
@@ -163,7 +164,7 @@ function getCalendarDays(year: number, month: number): (Date | null)[][] {
   return weeks;
 }
 
-export function RussianDateTimePicker({ id, label, value, onChange }: RussianDateTimePickerProps) {
+export function RussianDateTimePicker({ id, label, value, onChange, error }: RussianDateTimePickerProps) {
   const parsed = fromIsoString(value.iso);
   const [dateStr, setDateStr] = useState(parsed.dateStr);
   const [timeStr, setTimeStr] = useState(parsed.timeStr);
@@ -254,7 +255,7 @@ export function RussianDateTimePicker({ id, label, value, onChange }: RussianDat
   const selectedDate = parseRussianDate(dateStr);
 
   return (
-    <div className="ru-datetime" ref={wrapRef}>
+    <div className={`ru-datetime${error ? ' form-field--invalid' : ''}`} ref={wrapRef}>
       <span className="form-field__label">{label}</span>
 
       <div className="ru-datetime__row">
@@ -393,6 +394,7 @@ export function RussianDateTimePicker({ id, label, value, onChange }: RussianDat
         Формат: {dateStr || 'ДД.ММ.ГГГГ'} {timeStr || 'ЧЧ:ММ'}
         {value.isUtc ? ' (UTC)' : ' (локальное)'}
       </span>
+      {error && <p className="form-field__error">{error}</p>}
     </div>
   );
 }

@@ -9,7 +9,7 @@
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-right: 1px solid var(--glass-border);
-  z-index: 10;
+  z-index: 40;
 }
 
 .sidebar__brand {
@@ -194,51 +194,4 @@
 .sidebar__user-name {
   font-size: 0.8rem;
   color: var(--text-secondary);
-}
-
-@media (max-width: 768px) {
-  .sidebar {
-    width: 100%;
-    min-width: 0;
-    height: auto;
-    flex-direction: row;
-    align-items: center;
-    padding: 0.5rem 0.75rem;
-    border-right: none;
-    border-bottom: 1px solid var(--glass-border);
-  }
-
-  .sidebar__brand {
-    padding: 0;
-    margin-bottom: 0;
-  }
-
-  .sidebar__brand-text,
-  .sidebar__theme-hint,
-  .sidebar__user-mini {
-    display: none;
-  }
-
-  .sidebar__nav {
-    flex: 1;
-    flex-direction: row;
-    overflow-x: auto;
-    gap: 0.25rem;
-    padding: 0;
-  }
-
-  .sidebar__link {
-    flex-direction: column;
-    min-width: 4.5rem;
-    padding: 0.35rem 0.5rem;
-    font-size: 0.65rem;
-  }
-
-  .sidebar__link-icon {
-    font-size: 1rem;
-  }
-
-  .sidebar__footer {
-    display: none;
-  }
 }

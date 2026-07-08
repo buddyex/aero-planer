@@ -1,4 +1,5 @@
 import type { Drone, DroneStatus } from '../types';
+import type { DroneRow } from '../../shared/types/api.types';
 
 /** Нормализация статуса из БД (legacy-значения и пробелы) */
 export function normalizeDroneStatus(status: unknown): DroneStatus {
@@ -17,7 +18,7 @@ export function normalizeDroneStatus(status: unknown): DroneStatus {
   return legacyMap[raw] ?? 'Готов';
 }
 
-export function mapDroneRow(row: Record<string, unknown>): Drone {
+export function mapDroneRow(row: DroneRow | Record<string, unknown>): Drone {
   return {
     id: Number(row.id),
     name: String(row.name ?? ''),

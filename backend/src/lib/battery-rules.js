@@ -9,6 +9,11 @@ function isBatteryAvailableForMission(status) {
   return status === 'Отлично';
 }
 
+function isBatteryNearInspection(cycleCount) {
+  const mod = cycleCount % BATTERY_INSPECTION_CYCLE_INTERVAL;
+  return mod >= 45 && mod < BATTERY_INSPECTION_CYCLE_INTERVAL;
+}
+
 function validateBatteryInspectionPayload(payload = {}, batteryStatus = '') {
   if (batteryStatus !== 'Требуется проверка') {
     return {
@@ -57,5 +62,6 @@ module.exports = {
   BATTERY_MIN_CAPACITY_PERCENT,
   requiresInspectionAtCycle,
   isBatteryAvailableForMission,
+  isBatteryNearInspection,
   validateBatteryInspectionPayload,
 };

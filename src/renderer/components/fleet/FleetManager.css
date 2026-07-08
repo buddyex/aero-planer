@@ -195,6 +195,14 @@
   color: var(--text-muted);
 }
 
+.fleet-card__badges {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
 .fleet-card__badge {
   flex-shrink: 0;
   padding: 0.2rem 0.55rem;
@@ -206,6 +214,14 @@
   background: var(--surface-elevated);
   border: 1px solid var(--glass-border);
   color: var(--text-secondary);
+}
+
+.fleet-card__badge--soon {
+  background: rgba(234, 179, 8, 0.15);
+  border-color: rgba(234, 179, 8, 0.35);
+  color: #eab308;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .fleet-card__specs {
@@ -263,6 +279,13 @@
 .btn--sm {
   padding: 0.4rem 0.75rem;
   font-size: 0.8125rem;
+}
+
+@media (max-width: 767px) {
+  .btn--sm {
+    min-height: 2.75rem;
+    padding: 0.5rem 0.875rem;
+  }
 }
 
 .btn--danger {

@@ -334,6 +334,8 @@
   font-size: 0.875rem;
   line-height: 1.45;
   word-break: break-word;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .comms-bubble--own .comms-bubble__text {

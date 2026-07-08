@@ -57,6 +57,10 @@ function verifyToken(token) {
 }
 
 async function loginOperator(login, pin) {
+  if (!login?.trim() || pin === undefined || pin === null || String(pin).trim() === '') {
+    return { ok: false, error: 'Укажите логин и PIN-код.' };
+  }
+
   const rateCheck = checkLoginRateLimit(login);
   if (!rateCheck.ok) return rateCheck;
 

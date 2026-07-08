@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import { useApi } from '../../context/ApiContext';
 import { useAuth } from '../../context/AuthContext';
-import type { Battery, Mission } from '../../types';
-import { formatBatteryOptionLabel } from '../../utils/batteries';
+import type { Battery, Mission, Operator } from '../../types';
+import { formatBatteryOptionLabel, getBatteryStatusSuffix, isBatterySelectableForMission } from '../../utils/batteries';
+import { isDroneBlockedByFlightHours } from '../../utils/maintenanceRules';
 import {
   evaluateMissionWeatherRisk,
   logBlockedLaunchAttempt,
@@ -31,7 +32,7 @@ function valueFromIso(iso: string): RussianDateTimeValue {
 }
 
 export function CreateMissionModal({ open, onClose, mission = null }: CreateMissionModalProps) {
-  const { readyDrones, availablePilots, sectors, createMission, updateMission, refreshAppData, getDroneById, operators } =
+  const { drones, availablePilots, sectors, createMission, updateMission, refreshAppData, getDroneById, operators } =
     useAppData();
   const api = useApi();
   const { user } = useAuth();
@@ -39,7 +40,7 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
 
   const [title, setTitle] = useState('');
   const [operatorId, setOperatorId] = useState(availablePilots[0]?.id ?? 0);
-  const [droneId, setDroneId] = useState(readyDrones[0]?.id ?? 0);
+  const [droneId, setDroneId] = useState(drones[0]?.id ?? 0);
   const [batteryId, setBatteryId] = useState('');
   const [availableBatteries, setAvailableBatteries] = useState<Battery[]>([]);
   const [pendingInspectionCount, setPendingInspectionCount] = useState(0);
@@ -49,6 +50,7 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
   const [start, setStart] = useState<RussianDateTimeValue>(() => createDefaultValue(1));
   const [end, setEnd] = useState<RussianDateTimeValue>(() => createDefaultValue(3));
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [weatherRisk, setWeatherRisk] = useState<MissionWeatherRisk>({
     level: 'unknown',
@@ -59,26 +61,91 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
   const [drawRouteEnabled, setDrawRouteEnabled] = useState(false);
 
   const selectableDrones = useMemo(() => {
-    if (!isEditMode || !mission) return readyDrones;
-    if (readyDrones.some((d) => d.id === mission.drone_id)) return readyDrones;
+    if (!isEditMode || !mission) return drones;
+    if (drones.some((d) => d.id === mission.drone_id)) return drones;
     return [
-      ...readyDrones,
+      ...drones,
       {
         id: mission.drone_id,
         serial_number: mission.drone_serial ?? `#${mission.drone_id}`,
         name: mission.drone_name ?? 'Борт миссии',
         status: 'Запланирован' as const,
         flight_hours: 0,
+        max_wind_speed: 0,
+        battery_capacity: 0,
+        payload_capacity: 0,
+        flight_time_max: 0,
       },
     ];
-  }, [isEditMode, mission, readyDrones]);
+  }, [isEditMode, mission, drones]);
+
+  const isDroneSelectable = (drone: (typeof selectableDrones)[number]) =>
+    drone.status === 'Готов' && !isDroneBlockedByFlightHours(drone.flight_hours);
+
+  const getDroneStatusSuffix = (drone: (typeof selectableDrones)[number]) => {
+    if (['На ТО', 'Ремонт'].includes(drone.status)) return ` (${drone.status})`;
+    if (isDroneBlockedByFlightHours(drone.flight_hours)) return ' (Превышен налёт)';
+    if (drone.status !== 'Готов') return ` (${drone.status})`;
+    return null;
+  };
+
+  const droneOptions = useMemo(
+    () =>
+      selectableDrones.length === 0
+        ? [{ value: 0, label: 'Нет бортов в реестре', disabled: true }]
+        : selectableDrones.map((d) => {
+            const suffix = getDroneStatusSuffix(d);
+            const selectable = isDroneSelectable(d);
+            return {
+              value: d.id,
+              label: `${d.serial_number} (${d.name}) — ${d.status}, налёт ${(d.flight_hours ?? 0).toFixed(1)} ч${suffix ?? ''}`,
+              disabled: !selectable,
+              variant: !selectable ? ('blocked' as const) : ('default' as const),
+            };
+          }),
+    [selectableDrones],
+  );
+
+  const batteryOptions = useMemo(
+    () =>
+      availableBatteries.length === 0
+        ? [{ value: '', label: 'Нет АКБ в реестре', disabled: true }]
+        : availableBatteries.map((battery) => {
+            const suffix = getBatteryStatusSuffix(battery);
+            const selectable = isBatterySelectableForMission(battery);
+            return {
+              value: battery.id,
+              label: `${formatBatteryOptionLabel(battery)}${suffix ?? ''}`,
+              disabled: !selectable,
+              variant: !selectable ? ('blocked' as const) : ('default' as const),
+            };
+          }),
+    [availableBatteries],
+  );
+
+  const selectedDroneSelectable = useMemo(
+    () => selectableDrones.some((d) => d.id === droneId && isDroneSelectable(d)),
+    [selectableDrones, droneId],
+  );
+
+  const selectedBatterySelectable = useMemo(
+    () => availableBatteries.some((b) => b.id === batteryId && isBatterySelectableForMission(b)),
+    [availableBatteries, batteryId],
+  );
 
   const pilotOptions = useMemo(() => {
     if (user?.role === 'Оператор' && user.id) {
-      const self = operators.find((o) => o.id === user.id);
-      if (self && !availablePilots.some((o) => o.id === user.id)) {
-        return [self, ...availablePilots];
-      }
+      const selfFromList = operators.find((o) => o.id === user.id);
+      const self: Operator =
+        selfFromList ??
+        ({
+          id: user.id,
+          full_name: user.full_name,
+          login: user.login,
+          role: 'Оператор',
+          duty_status: 'Свободен',
+        } as Operator);
+      return [self];
     }
     return availablePilots;
   }, [availablePilots, operators, user]);
@@ -138,7 +205,8 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
         if (mission?.battery_id) {
           setBatteryId(mission.battery_id);
         } else {
-          setBatteryId(batteries[0]?.id ?? '');
+          const firstSelectable = batteries.find((b) => isBatterySelectableForMission(b));
+          setBatteryId(firstSelectable?.id ?? batteries[0]?.id ?? '');
         }
       } else {
         setAvailableBatteries([]);
@@ -157,7 +225,8 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
       if (isEditMode && mission?.battery_id) {
         setBatteryId(mission.battery_id);
       } else {
-        setBatteryId(availableBatteries[0].id);
+        const firstSelectable = availableBatteries.find((b) => isBatterySelectableForMission(b));
+        setBatteryId(firstSelectable?.id ?? availableBatteries[0]?.id ?? '');
       }
     }
   }, [availableBatteries, batteryId, isEditMode, mission?.battery_id]);
@@ -168,7 +237,11 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
       return;
     }
     if (!selectableDrones.some((d) => d.id === droneId)) {
-      setDroneId(selectableDrones[0].id);
+      const firstSelectable = selectableDrones.find((d) => isDroneSelectable(d));
+      setDroneId(firstSelectable?.id ?? selectableDrones[0]?.id ?? 0);
+    } else if (!isEditMode && !selectableDrones.some((d) => d.id === droneId && isDroneSelectable(d))) {
+      const firstSelectable = selectableDrones.find((d) => isDroneSelectable(d));
+      if (firstSelectable) setDroneId(firstSelectable.id);
     }
   }, [selectableDrones, droneId]);
 
@@ -192,16 +265,55 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
     }
   }, [sectors, sectorId]);
 
+  const clearFieldError = (key: string) => {
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const validateMissionForm = (): Record<string, string> => {
+    const errors: Record<string, string> = {};
+
+    if (!title.trim()) {
+      errors.title = 'Укажите название миссии.';
+    }
+    if (sectors.length === 0 || sectorId <= 0) {
+      errors.sectorId = 'Выберите сектор.';
+    }
+    if (!batteryId) {
+      errors.batteryId = 'Выберите доступную АКБ.';
+    }
+    if (!start.iso) {
+      errors.start = 'Укажите дату и время начала.';
+    }
+    if (!end.iso) {
+      errors.end = 'Укажите дату и время окончания.';
+    }
+    if (start.iso && end.iso) {
+      const startDate = new Date(start.iso.replace(' ', 'T'));
+      const endDate = new Date(end.iso.replace(' ', 'T'));
+      if (!Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime()) && endDate <= startDate) {
+        errors.end = 'Время окончания должно быть позже времени начала.';
+      }
+      if (!isEditMode && !Number.isNaN(startDate.getTime()) && startDate < new Date()) {
+        errors.start = 'Время начала не может быть в прошлом.';
+      }
+    }
+
+    return errors;
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
 
-    if (sectors.length === 0 || sectorId <= 0) {
-      setError('Создайте хотя бы один сектор перед планированием миссии.');
-      return;
-    }
-    if (!start.iso || !end.iso) {
-      setError('Укажите дату и время в формате ДД.ММ.ГГГГ ЧЧ:ММ');
+    const validationErrors = validateMissionForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
       return;
     }
 
@@ -211,11 +323,6 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
         selectedDrone?.name ?? mission?.drone_name ?? 'БПЛА',
         user?.id,
       );
-      return;
-    }
-
-    if (!batteryId) {
-      setError('Выберите доступную АКБ.');
       return;
     }
 
@@ -255,7 +362,7 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
       title={isEditMode ? 'Редактировать миссию' : 'Создать миссию'}
     >
       <form onSubmit={handleSubmit} className="create-mission-form">
-        <div className="form-field">
+        <div className={`form-field${fieldErrors.title ? ' form-field--invalid' : ''}`}>
           <label className="form-field__label" htmlFor="mission-title">
             Название миссии
           </label>
@@ -263,10 +370,14 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
             id="mission-title"
             className="form-field__input"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              clearFieldError('title');
+              setTitle(e.target.value);
+            }}
             placeholder="Например: Патруль сектора Альфа"
             required
           />
+          {fieldErrors.title && <p className="form-field__error">{fieldErrors.title}</p>}
         </div>
 
         <div className="form-field">
@@ -297,21 +408,14 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
             id="mission-drone"
             value={droneId}
             onChange={(v) => setDroneId(Number(v))}
-            options={
-              selectableDrones.length === 0
-                ? [{ value: 0, label: 'Нет готовых бортов', disabled: true }]
-                : selectableDrones.map((d) => ({
-                    value: d.id,
-                    label: `${d.serial_number} (${d.name}) — ${d.status}, налёт ${(d.flight_hours ?? 0).toFixed(1)} ч`,
-                  }))
-            }
+            options={droneOptions}
           />
           <span className="form-field__hint">
-            Только борта со статусом «Готов» и налётом ≤ 100 ч
+            Доступны только борта со статусом «Готов» и налётом &lt; 100 ч. Недоступные отмечены красным.
           </span>
         </div>
 
-        <div className="form-field">
+        <div className={`form-field${fieldErrors.batteryId ? ' form-field--invalid' : ''}`}>
           <label className="form-field__label" htmlFor="mission-battery">
             Аккумулятор (АКБ)
           </label>
@@ -319,25 +423,24 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
             id="mission-battery"
             value={batteryId}
             disabled={availableBatteries.length === 0}
-            onChange={(v) => setBatteryId(String(v))}
-            options={
-              availableBatteries.length === 0
-                ? [{ value: '', label: 'Нет доступных АКБ', disabled: true }]
-                : availableBatteries.map((battery) => ({
-                    value: battery.id,
-                    label: formatBatteryOptionLabel(battery),
-                  }))
-            }
+            onChange={(v) => {
+              clearFieldError('batteryId');
+              setBatteryId(String(v));
+            }}
+            options={batteryOptions}
           />
           <span className="form-field__hint">
-            Только АКБ со статусом «Отлично», не назначенные на активные миссии
-            {availableBatteries.length === 0 && pendingInspectionCount > 0 && (
+            Доступны только АКБ со статусом «Отлично», не назначенные на активные миссии
+            {availableBatteries.length > 0 &&
+              !availableBatteries.some((b) => isBatterySelectableForMission(b)) &&
+              pendingInspectionCount > 0 && (
               <> · {pendingInspectionCount} АКБ ожидают проверки техником</>
             )}
           </span>
+          {fieldErrors.batteryId && <p className="form-field__error">{fieldErrors.batteryId}</p>}
         </div>
 
-        <div className="form-field">
+        <div className={`form-field${fieldErrors.sectorId ? ' form-field--invalid' : ''}`}>
           <label className="form-field__label" htmlFor="mission-sector">
             Сектор
           </label>
@@ -345,7 +448,10 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
             id="mission-sector"
             value={sectorId}
             disabled={sectors.length === 0}
-            onChange={(v) => setSectorId(Number(v))}
+            onChange={(v) => {
+              clearFieldError('sectorId');
+              setSectorId(Number(v));
+            }}
             options={
               sectors.length === 0
                 ? [{ value: 0, label: 'Нет доступных секторов', disabled: true }]
@@ -358,6 +464,7 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
           {sectors.length === 0 && (
             <span className="form-field__hint">Сначала создайте сектор на карте в разделе «Дашборд».</span>
           )}
+          {fieldErrors.sectorId && <p className="form-field__error">{fieldErrors.sectorId}</p>}
         </div>
 
         <div className="create-mission-form__row">
@@ -400,13 +507,21 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
             id="mission-start"
             label="Начало"
             value={start}
-            onChange={setStart}
+            onChange={(value) => {
+              clearFieldError('start');
+              setStart(value);
+            }}
+            error={fieldErrors.start}
           />
           <RussianDateTimePicker
             id="mission-end"
             label="Окончание"
             value={end}
-            onChange={setEnd}
+            onChange={(value) => {
+              clearFieldError('end');
+              setEnd(value);
+            }}
+            error={fieldErrors.end}
           />
         </div>
 
@@ -445,6 +560,8 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
               sectors.length === 0 ||
               availableBatteries.length === 0 ||
               !batteryId ||
+              !selectedDroneSelectable ||
+              !selectedBatterySelectable ||
               !title.trim() ||
               weatherRisk.windBlocked
             }

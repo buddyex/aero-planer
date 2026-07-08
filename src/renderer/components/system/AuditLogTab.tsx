@@ -102,7 +102,7 @@ export function AuditLogTab() {
       ) : null}
 
       <GlassCard>
-        <div className="system-center__table-wrap">
+        <div className="system-center__table-wrap w-full">
           <table className="system-center__table">
             <thead>
               <tr>

@@ -3,6 +3,7 @@ import { useApi } from '../../context/ApiContext';
 import { useAuth } from '../../context/AuthContext';
 import type { Battery, BatteryInspectionLog } from '../../types';
 import type { BatteryInspectionFormPayload } from './BatteryInspectionModal';
+import { isBatteryNearInspection } from '../../utils/batteries';
 import { canCompleteMaintenance } from '../../utils/permissions';
 import { GlassCard } from '../ui/GlassCard';
 import { OperatorLink } from '../ui/OperatorLink';
@@ -198,7 +199,7 @@ export function BatteryRegistry({ onPendingCountChange }: BatteryRegistryProps) 
           <p className="battery-registry__empty">Аккумуляторы не зарегистрированы</p>
         ) : (
           <>
-            <div className="battery-registry__table-wrap hidden md:block">
+            <div className="battery-registry__table-wrap hidden md:block overflow-x-auto w-full">
               <table className="battery-registry__table">
                 <thead>
                   <tr>
@@ -216,7 +217,12 @@ export function BatteryRegistry({ onPendingCountChange }: BatteryRegistryProps) 
                       <td>{battery.serial_number}</td>
                       <td>{battery.type}</td>
                       <td>{battery.capacity.toLocaleString('ru-RU')}</td>
-                      <td>{battery.cycle_count}</td>
+                      <td>
+                        {battery.cycle_count}
+                        {isBatteryNearInspection(battery.cycle_count) && (
+                          <span className="battery-registry__soon-badge">Скоро проверка</span>
+                        )}
+                      </td>
                       <td>
                         <span className={`battery-registry__status ${statusClass(battery.status)}`}>
                           {battery.status}
@@ -261,7 +267,12 @@ export function BatteryRegistry({ onPendingCountChange }: BatteryRegistryProps) 
                     <dt>Ёмкость</dt>
                     <dd>{battery.capacity.toLocaleString('ru-RU')} мАч</dd>
                     <dt>Циклы</dt>
-                    <dd>{battery.cycle_count}</dd>
+                    <dd>
+                      {battery.cycle_count}
+                      {isBatteryNearInspection(battery.cycle_count) && (
+                        <span className="battery-registry__soon-badge">Скоро проверка</span>
+                      )}
+                    </dd>
                   </dl>
                   {canInspect && battery.status === 'Требуется проверка' && (
                     <button

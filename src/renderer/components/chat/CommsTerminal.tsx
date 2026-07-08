@@ -204,7 +204,13 @@ export function CommsTerminal({
       const result = await api.sendMessage(user.id, activeContact.id, text);
       if (result?.ok) {
         setDraft('');
-        await fetchMessages();
+        if (!socket?.connected && result.data) {
+          setMessages((prev) => {
+            const msg = result.data as MessageRow;
+            if (prev.some((m) => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
+        }
       }
     } catch {
       /* тихий fail */

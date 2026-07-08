@@ -7,18 +7,56 @@
 
 .sector-map-card__header {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.sector-map-card__header-main {
-  display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  flex: 1;
+}
+
+.sector-map-card__header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   min-width: 0;
+}
+
+.sector-map-card__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 0;
+  flex: 1;
+}
+
+.sector-map-card__title-full,
+.sector-map-card__title-short {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sector-map-card__title-short {
+  display: none;
+}
+
+.sector-map-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.sector-map-card__btn {
+  font-size: 0.8125rem;
+  padding: 0.5rem 0.875rem;
+  white-space: nowrap;
+}
+
+.sector-map-card__btn--active {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: var(--accent-primary-bg);
 }
 
 .sector-map-card__legend {
@@ -43,24 +81,6 @@
   flex-shrink: 0;
 }
 
-.sector-map-card__title {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.sector-map-card__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.sector-map-card__btn--active {
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
-}
-
 .sector-map-card__error {
   margin: 0;
   padding: 0.75rem 1rem;
@@ -82,11 +102,68 @@
 }
 
 .sector-map-card__map {
-  height: min(52vh, 42rem);
-  min-height: 28rem;
+  height: clamp(14rem, 42vh, 22rem);
+  min-height: 14rem;
   border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--glass-border);
+}
+
+@media (min-width: 768px) {
+  .sector-map-card__map {
+    height: min(52vh, 42rem);
+    min-height: 28rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .sector-map-card {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .sector-map-card__title-full {
+    display: none;
+  }
+
+  .sector-map-card__title-short {
+    display: block;
+  }
+
+  .sector-map-card__header-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sector-map-card__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sector-map-card__actions .sector-map-card__btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 640px) {
+  .sector-map-card__header {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .sector-map-card__header-top {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .sector-map-card__header > .map-location-search-wrap {
+    flex: 1 1 100%;
+    max-width: 28rem;
+  }
 }
 
 .sector-map-card__map--pick {

@@ -162,7 +162,7 @@ export function MaintenanceJournal() {
     }
     const payload = result.data as { drone?: DroneRow } | undefined;
     if (payload?.drone) {
-      patchDrone(mapDroneRow(payload.drone as unknown as Record<string, unknown>));
+      patchDrone(mapDroneRow(payload.drone));
     }
 
 
@@ -201,9 +201,7 @@ export function MaintenanceJournal() {
     }
 
     if (result.data) {
-
-      patchDrone(mapDroneRow(result.data as unknown as Record<string, unknown>));
-
+      patchDrone(mapDroneRow(result.data));
     }
 
 

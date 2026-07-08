@@ -22,7 +22,7 @@ export function MissionPlanner() {
   const canCreate = user ? canCreateMissions(user.role) : false;
 
   const handleReportSaved = useCallback(() => {
-    setReportToast({ id: Date.now(), message: 'Отчет успешно сохранен' });
+    setReportToast({ id: Date.now(), message: 'Полётный лист успешно скачан' });
   }, []);
 
   useEffect(() => {

@@ -98,6 +98,17 @@ body {
   color: var(--text-primary);
   line-height: 1.5;
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea,
+select,
+[contenteditable='true'],
+.selectable-text {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 #root {

@@ -224,7 +224,7 @@ export function MissionDetailModal({ mission, open, onClose, onReportSaved, onEd
                 ) : (
                   <>
                     <PdfIcon />
-                    Скачать полётный лист
+                    Скачать PDF
                   </>
                 )}
               </button>
@@ -235,7 +235,7 @@ export function MissionDetailModal({ mission, open, onClose, onReportSaved, onEd
                 onClick={handleExportKml}
                 title="Экспорт сектора и маршрута в KML"
               >
-                {kmlLoading ? 'Экспорт KML…' : 'Экспорт KML'}
+                {kmlLoading ? 'Скачивание KML…' : 'Скачать KML'}
               </button>
             </div>
           </div>

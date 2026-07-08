@@ -94,10 +94,29 @@
   vertical-align: middle;
 }
 
+.battery-registry__soon-badge {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-sm);
+  background: rgba(234, 179, 8, 0.15);
+  color: #eab308;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .battery-registry__inspect-btn {
   white-space: nowrap;
   font-size: 0.8rem;
   padding: 0.35rem 0.65rem;
+}
+
+@media (max-width: 767px) {
+  .battery-registry__inspect-btn {
+    min-height: 2.75rem;
+    padding: 0.5rem 0.875rem;
+  }
 }
 
 .battery-registry__no-action {

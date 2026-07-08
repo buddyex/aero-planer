@@ -1,9 +1,41 @@
-import type { Mission, MissionStatus } from '../types';
-import { parseMissionTime } from './weather';
+import type { Mission, MissionStatus, RiskLevel } from '../types';
+import type { MissionRow } from '../../shared/types/api.types';
+import { normalizeDateTime, parseMissionTime } from './weather';
 
 export function formatMissionId(id: string): string {
   if (!id) return '—';
   return id.length > 8 ? id.slice(0, 8) : id;
+}
+
+export function mapMissionRow(row: MissionRow): Mission {
+  return {
+    id: String(row.id),
+    title: String(row.title),
+    operator_id: Number(row.operator_id),
+    drone_id: Number(row.drone_id),
+    sector_id: Number(row.sector_id),
+    start_time: normalizeDateTime(row.start_time),
+    end_time: normalizeDateTime(row.end_time),
+    status: row.status as Mission['status'],
+    creator_id: row.creator_id != null ? String(row.creator_id) : null,
+    creator_name: row.creator_name ? String(row.creator_name) : undefined,
+    approved_by_id: row.approved_by_id != null ? String(row.approved_by_id) : null,
+    approver_name: row.approver_name ? String(row.approver_name) : undefined,
+    operator_name: row.operator_name ? String(row.operator_name) : undefined,
+    drone_serial: row.drone_serial ? String(row.drone_serial) : undefined,
+    drone_name: row.drone_name ? String(row.drone_name) : undefined,
+    battery_id: row.battery_id ? String(row.battery_id) : undefined,
+    battery_serial: row.battery_serial ? String(row.battery_serial) : undefined,
+    battery_type: row.battery_type ? String(row.battery_type) : undefined,
+    battery_capacity: row.battery_capacity != null ? Number(row.battery_capacity) : undefined,
+    battery_cycle_count:
+      row.battery_cycle_count != null ? Number(row.battery_cycle_count) : undefined,
+    sector_name: row.sector_name ? String(row.sector_name) : undefined,
+    sector_risk_level: row.sector_risk_level as RiskLevel | undefined,
+    route_geometry: row.route_geometry != null ? String(row.route_geometry) : undefined,
+    flight_radius_m: row.flight_radius_m != null ? Number(row.flight_radius_m) : undefined,
+    flight_altitude_m: row.flight_altitude_m != null ? Number(row.flight_altitude_m) : undefined,
+  };
 }
 
 function missionDayKey(startTime: string): string {

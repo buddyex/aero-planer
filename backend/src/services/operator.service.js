@@ -1,6 +1,7 @@
 const { get, all, run } = require('../db/pool');
 const rbac = require('../lib/rbac');
 const { createPinCredentials } = require('../lib/pin-auth');
+const { validateOperatorCreate, validateOperatorUpdate } = require('../lib/validate');
 const { logAction } = require('./audit.service');
 
 async function getAllOperators(sessionRole) {
@@ -17,12 +18,16 @@ async function createOperator(sessionOperatorId, sessionRole, payload) {
   if (!rbac.PERMISSIONS.manageOperators.includes(sessionRole)) {
     return { ok: false, error: 'Доступ запрещён.' };
   }
+
+  const validation = validateOperatorCreate(payload);
+  if (!validation.ok) return validation;
+
   const creds = createPinCredentials(payload.pin);
   try {
     const result = await run(
       `INSERT INTO operators (full_name, login, pin_code, pin_hash, pin_salt, role)
        VALUES (?, ?, '', ?, ?, ?)`,
-      [payload.full_name, payload.login, creds.pin_hash, creds.pin_salt, payload.role],
+      [payload.full_name.trim(), payload.login.trim(), creds.pin_hash, creds.pin_salt, payload.role],
     );
     const row = await get(
       'SELECT id, full_name, login, role, duty_status FROM operators WHERE id = ?',
@@ -42,16 +47,23 @@ async function updateOperator(sessionOperatorId, sessionRole, operatorId, payloa
   if (!rbac.PERMISSIONS.manageOperators.includes(sessionRole)) {
     return { ok: false, error: 'Доступ запрещён.' };
   }
+
+  const validation = validateOperatorUpdate(payload);
+  if (!validation.ok) return validation;
+
+  const existing = await get('SELECT id FROM operators WHERE id = ?', [operatorId]);
+  if (!existing) return { ok: false, error: 'Оператор не найден.' };
+
   if (payload.pin) {
     const creds = createPinCredentials(payload.pin);
     await run(
       'UPDATE operators SET full_name=?, login=?, role=?, pin_hash=?, pin_salt=?, pin_code=? WHERE id=?',
-      [payload.full_name, payload.login, payload.role, creds.pin_hash, creds.pin_salt, '', operatorId],
+      [payload.full_name.trim(), payload.login.trim(), payload.role, creds.pin_hash, creds.pin_salt, '', operatorId],
     );
   } else {
     await run(
       'UPDATE operators SET full_name=?, login=?, role=? WHERE id=?',
-      [payload.full_name, payload.login, payload.role, operatorId],
+      [payload.full_name.trim(), payload.login.trim(), payload.role, operatorId],
     );
   }
   const row = await get(

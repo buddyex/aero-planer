@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { get, all, run } = require('../db/pool');
 const rbac = require('../lib/rbac');
+const { validateBatteryInspection } = require('../lib/validate');
 
 async function getAvailableBatteries(sessionRole) {
   try {
@@ -9,22 +10,32 @@ async function getAvailableBatteries(sessionRole) {
     }
 
     const rows = await all(`
-      SELECT id, serial_number, type, capacity, cycle_count, status
-      FROM batteries
-      WHERE status = 'Отлично'
-        AND NOT EXISTS (
+      SELECT
+        b.id,
+        b.serial_number,
+        b.type,
+        b.capacity,
+        b.cycle_count,
+        b.status,
+        EXISTS (
           SELECT 1 FROM missions m
-          WHERE m.battery_id = batteries.id
-            AND m.status NOT IN ('Завершено', 'Отменено')
-        )
-      ORDER BY serial_number
+          WHERE m.battery_id = b.id
+            AND m.status NOT IN ('Завершено', 'Отменено', 'Отклонено')
+        ) AS on_active_mission
+      FROM batteries b
+      ORDER BY b.serial_number
     `);
+
+    const data = rows.map((row) => ({
+      ...row,
+      on_active_mission: Boolean(row.on_active_mission),
+    }));
 
     const pendingRow = await get(
       `SELECT COUNT(*) AS cnt FROM batteries WHERE status = 'Требуется проверка'`,
     );
 
-    return { ok: true, data: rows, pendingInspectionCount: pendingRow?.cnt ?? 0 };
+    return { ok: true, data, pendingInspectionCount: pendingRow?.cnt ?? 0 };
   } catch (error) {
     return { ok: false, error: 'DB_ERROR', message: error.message };
   }
@@ -140,6 +151,9 @@ async function completeBatteryInspection(sessionOperatorId, sessionRole, battery
     if (battery.status !== 'Требуется проверка') {
       return { ok: false, error: 'Проверка доступна только для АКБ со статусом «Требуется проверка».' };
     }
+
+    const validation = validateBatteryInspection(payload);
+    if (!validation.ok) return validation;
 
     await run(
       `INSERT INTO battery_inspection_logs (

@@ -1,11 +1,42 @@
 const { v4: uuidv4 } = require('uuid');
 const { get, all, run } = require('../db/pool');
 const rbac = require('../lib/rbac');
+const { validateMissionPayload } = require('../lib/validate');
+const { isDroneBlockedByFlightHours, MAINTENANCE_FLIGHT_HOURS_LIMIT } = require('../lib/maintenance-rules');
 const { logAction } = require('./audit.service');
+const { emitToRoles, emitBroadcast, emitToUser } = require('../sockets/emitter');
 
 const ACTIVE_SECTOR_SQL = 'is_active = 1';
-const MAINTENANCE_FLIGHT_HOURS_LIMIT = 100;
 const WIND_SAFETY_ERROR = 'Запуск отклонен системой безопасности: превышен ветровой порог';
+const DRONE_MAINTENANCE_ERROR = 'Дрон недоступен: требуется техническое обслуживание';
+const BATTERY_INSPECTION_ERROR = 'АКБ недоступна: не пройдена техническая инспекция';
+
+function emitMissionStatusChanged(mission) {
+  emitBroadcast('mission:statusChanged', mission);
+}
+
+function emitMissionPendingApproval(mission) {
+  emitToRoles(['Руководитель', 'Администратор'], 'notification:toast', {
+    type: 'info',
+    message: 'Новая миссия ожидает согласования',
+    missionId: mission.id,
+  });
+  emitBroadcast('mission:created', mission);
+}
+
+function notifyOperatorMissionDecision(mission, decision) {
+  if (!mission?.operator_id) return;
+  const title = mission.title ? `«${mission.title}»` : '';
+  const message =
+    decision === 'approved'
+      ? `Миссия ${title} утверждена руководителем`
+      : `Миссия ${title} отклонена руководителем`;
+  emitToUser(mission.operator_id, 'notification:toast', {
+    type: decision === 'approved' ? 'mission_approved' : 'mission_rejected',
+    message,
+    missionId: mission.id,
+  });
+}
 
 function mapDbError(error) {
   return error?.sqlMessage || error?.message || 'Ошибка базы данных.';
@@ -34,21 +65,49 @@ async function assertWindWithinDroneLimits(droneId, sectorId, operatorId = null)
   }
 }
 
-async function validateApprovedMissionResources(payload, excludeMissionId = null) {
+async function assertMissionResourcesAvailable(droneId, batteryId) {
   const drone = await get(
     'SELECT id, status, serial_number, name, flight_hours FROM drones WHERE id = ?',
-    [payload.drone_id],
+    [droneId],
   );
   if (!drone) return { ok: false, error: 'Борт БПЛА не найден.' };
+
+  if (['На ТО', 'Ремонт'].includes(drone.status)) {
+    return { ok: false, error: DRONE_MAINTENANCE_ERROR };
+  }
+  if (isDroneBlockedByFlightHours(drone.flight_hours ?? 0)) {
+    return {
+      ok: false,
+      error: `Ошибка АСОИУ: Превышен лимит налёта (>=${MAINTENANCE_FLIGHT_HOURS_LIMIT} ч). Требуется плановое ТО.`,
+    };
+  }
   if (drone.status !== 'Готов') {
     return { ok: false, error: `Борт ${drone.serial_number} недоступен (статус: ${drone.status}).` };
   }
-  if ((drone.flight_hours ?? 0) > MAINTENANCE_FLIGHT_HOURS_LIMIT) {
-    return {
-      ok: false,
-      error: `Ошибка АСОИУ: Превышен лимит налёта (>${MAINTENANCE_FLIGHT_HOURS_LIMIT} ч). Требуется плановое ТО.`,
-    };
+
+  if (!batteryId?.trim()) {
+    return { ok: false, error: 'Выберите аккумулятор (АКБ) для миссии.' };
   }
+
+  const battery = await get(
+    'SELECT id, serial_number, status FROM batteries WHERE id = ?',
+    [batteryId.trim()],
+  );
+  if (!battery) return { ok: false, error: 'АКБ не найдена.' };
+
+  if (['Требуется проверка', 'Списано'].includes(battery.status)) {
+    return { ok: false, error: BATTERY_INSPECTION_ERROR };
+  }
+  if (battery.status !== 'Отлично') {
+    return { ok: false, error: `АКБ ${battery.serial_number} недоступна (статус: ${battery.status}).` };
+  }
+
+  return { ok: true };
+}
+
+async function validateApprovedMissionResources(payload, excludeMissionId = null) {
+  const resourceCheck = await assertMissionResourcesAvailable(payload.drone_id, payload.battery_id);
+  if (!resourceCheck.ok) return resourceCheck;
 
   const pilot = await get(
     'SELECT id, full_name, role, duty_status FROM operators WHERE id = ?',
@@ -57,19 +116,6 @@ async function validateApprovedMissionResources(payload, excludeMissionId = null
   if (!pilot) return { ok: false, error: 'Оператор не найден.' };
   if (pilot.role === 'Оператор' && pilot.duty_status !== 'Свободен') {
     return { ok: false, error: 'Ошибка АСОИУ: Оператор уже назначен на другую миссию.' };
-  }
-
-  if (!payload.battery_id?.trim()) {
-    return { ok: false, error: 'Выберите аккумулятор (АКБ) для миссии.' };
-  }
-
-  const battery = await get(
-    'SELECT id, serial_number, status FROM batteries WHERE id = ?',
-    [payload.battery_id.trim()],
-  );
-  if (!battery) return { ok: false, error: 'АКБ не найдена.' };
-  if (battery.status !== 'Отлично') {
-    return { ok: false, error: `АКБ ${battery.serial_number} недоступна (статус: ${battery.status}).` };
   }
 
   const overlapParams = [
@@ -104,7 +150,8 @@ const MISSION_SELECT = `
     m.status, m.creator_id, m.approved_by_id,
     m.route_geometry, m.flight_radius_m, m.flight_altitude_m, m.sync_status,
     d.serial_number AS drone_serial, d.name AS drone_name, d.status AS drone_status,
-    d.max_wind_speed AS drone_max_wind,
+    dm.model_name AS drone_model_name,
+    COALESCE(dm.max_wind_speed, d.max_wind_speed) AS drone_max_wind,
     b.serial_number AS battery_serial, b.type AS battery_type,
     b.capacity AS battery_capacity, b.cycle_count AS battery_cycle_count,
     o.full_name AS operator_name, o.role AS operator_role,
@@ -113,6 +160,7 @@ const MISSION_SELECT = `
     s.sector_name, s.risk_level AS sector_risk_level
   FROM missions m
   INNER JOIN drones d ON d.id = m.drone_id
+  LEFT JOIN drone_models dm ON dm.model_name = d.name
   LEFT JOIN batteries b ON b.id = m.battery_id
   INNER JOIN operators o ON o.id = m.operator_id
   LEFT JOIN operators cr ON cr.id = m.creator_id
@@ -146,10 +194,8 @@ async function createMission(payload, sessionOperatorId, sessionRole) {
       return { ok: false, error: 'Доступ запрещён: нет прав на создание миссии.' };
     }
 
-    if (!payload.title?.trim()) return { ok: false, error: 'Укажите название миссии.' };
-    if (payload.start_time >= payload.end_time) {
-      return { ok: false, error: 'Время окончания должно быть позже времени начала.' };
-    }
+    const validation = validateMissionPayload(payload, { checkPastStart: true });
+    if (!validation.ok) return validation;
 
     const sector = await get(
       `SELECT id, center_lat, center_lon FROM sectors WHERE id = ? AND ${ACTIVE_SECTOR_SQL}`,
@@ -169,9 +215,8 @@ async function createMission(payload, sessionOperatorId, sessionRole) {
         return { ok: false, error: 'Оператор может создавать миссии только на себя.' };
       }
       missionStatus = 'Ожидает утверждения';
-      if (!payload.battery_id?.trim()) {
-        return { ok: false, error: 'Выберите аккумулятор (АКБ) для миссии.' };
-      }
+      const resourceCheck = await assertMissionResourcesAvailable(payload.drone_id, payload.battery_id);
+      if (!resourceCheck.ok) return resourceCheck;
     } else {
       missionStatus = 'К выполнению';
       approvedById = creatorId;
@@ -209,6 +254,11 @@ async function createMission(payload, sessionOperatorId, sessionRole) {
 
     const mission = await get(`${MISSION_SELECT} WHERE m.id = ?`, [missionId]);
     await logAction(sessionOperatorId, `Создана миссия «${mission.title}» (ID ${missionId})`);
+
+    if (missionStatus === 'Ожидает утверждения') {
+      emitMissionPendingApproval(mission);
+    }
+    emitMissionStatusChanged(mission);
 
     return {
       ok: true,
@@ -253,6 +303,8 @@ async function approveMission(missionId, approverId) {
 
     const updated = await get(`${MISSION_SELECT} WHERE m.id = ?`, [missionId]);
     await logAction(approverId, `Утверждена миссия «${updated.title}» (ID ${missionId})`);
+    emitMissionStatusChanged(updated);
+    notifyOperatorMissionDecision(updated, 'approved');
     return { ok: true, data: updated };
   } catch (error) {
     return { ok: false, error: mapDbError(error) };
@@ -275,6 +327,8 @@ async function rejectMission(missionId, approverId) {
     await run(`UPDATE missions SET status = 'Отклонено' WHERE id = ?`, [missionId]);
     const updated = await get(`${MISSION_SELECT} WHERE m.id = ?`, [missionId]);
     await logAction(approverId, `Отклонена миссия «${updated.title}» (ID ${missionId})`);
+    emitMissionStatusChanged(updated);
+    notifyOperatorMissionDecision(updated, 'rejected');
     return { ok: true, data: updated };
   } catch (error) {
     return { ok: false, error: mapDbError(error) };
@@ -283,6 +337,10 @@ async function rejectMission(missionId, approverId) {
 
 async function updateMissionStatus(missionId, newStatus, sessionOperatorId, sessionRole) {
   try {
+    if (!newStatus?.trim()) {
+      return { ok: false, error: 'Укажите новый статус миссии.' };
+    }
+
     const fullMission = await get(
       'SELECT id, title, status, operator_id, drone_id, sector_id, battery_id FROM missions WHERE id = ?',
       [missionId],
@@ -321,6 +379,9 @@ async function updateMissionStatus(missionId, newStatus, sessionOperatorId, sess
       sessionOperatorId,
       `Статус миссии «${updated.title}» (ID ${missionId}): ${fullMission.status} → ${newStatus}`,
     );
+    if (fullMission.status !== newStatus) {
+      emitMissionStatusChanged(updated);
+    }
     return { ok: true, data: updated };
   } catch (error) {
     return { ok: false, error: mapDbError(error) };
@@ -342,10 +403,11 @@ async function updateMission(missionId, payload, sessionOperatorId, sessionRole)
       return { ok: false, error: 'Редактировать можно только миссию до запуска.' };
     }
 
-    if (!payload.title?.trim()) return { ok: false, error: 'Укажите название миссии.' };
-    if (payload.start_time >= payload.end_time) {
-      return { ok: false, error: 'Время окончания должно быть позже времени начала.' };
-    }
+    const validation = validateMissionPayload(payload, { checkPastStart: false });
+    if (!validation.ok) return validation;
+
+    const resourceCheck = await assertMissionResourcesAvailable(payload.drone_id, payload.battery_id);
+    if (!resourceCheck.ok) return resourceCheck;
 
     await assertWindWithinDroneLimits(payload.drone_id, payload.sector_id, sessionOperatorId);
 

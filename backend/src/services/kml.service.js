@@ -78,7 +78,75 @@ function ringToKmlCoordinates(ring) {
   return closed.map(([lat, lon]) => `${lon},${lat},0`).join(' ');
 }
 
-function exportSectorsToKml(sectors, documentName = 'Секторы Aero-Planer') {
+function geoJsonPairsToKmlString(pairs) {
+  return pairs
+    .filter((pair) => Array.isArray(pair) && pair.length >= 2)
+    .map(([lon, lat]) => `${lon},${lat},0`)
+    .join(' ');
+}
+
+function normalizeGeoJsonInput(geoJson) {
+  let parsed = geoJson;
+  if (typeof parsed === 'string') {
+    try {
+      parsed = JSON.parse(parsed);
+    } catch {
+      return null;
+    }
+  }
+  if (!parsed || typeof parsed !== 'object') return null;
+
+  if (parsed.type === 'Feature' && parsed.geometry) {
+    return parsed.geometry;
+  }
+  if (parsed.type === 'FeatureCollection' && Array.isArray(parsed.features) && parsed.features[0]?.geometry) {
+    return parsed.features[0].geometry;
+  }
+  return parsed;
+}
+
+function geoJsonToKmlGeometry(geoJson) {
+  const geometry = normalizeGeoJsonInput(geoJson);
+  if (!geometry?.type || !geometry.coordinates) return null;
+
+  if (geometry.type === 'LineString') {
+    const coords = geometry.coordinates;
+    if (!Array.isArray(coords) || coords.length < 2) return null;
+    const coordinates = geoJsonPairsToKmlString(coords);
+    return coordinates ? { type: 'LineString', coordinates } : null;
+  }
+
+  if (geometry.type === 'Polygon') {
+    const rings = geometry.coordinates;
+    if (!Array.isArray(rings) || !Array.isArray(rings[0]) || rings[0].length < 3) return null;
+    const coordinates = geoJsonPairsToKmlString(rings[0]);
+    return coordinates ? { type: 'Polygon', coordinates } : null;
+  }
+
+  return null;
+}
+
+function lineStringToKmlCoordinates(geoJsonLineString) {
+  const result = geoJsonToKmlGeometry(geoJsonLineString);
+  return result?.type === 'LineString' ? result.coordinates : null;
+}
+
+function buildPlacemarkDescription(missionMeta) {
+  if (!missionMeta) return '';
+  const lines = [
+    `ID миссии: ${missionMeta.id ?? '—'}`,
+    `Дрон: ${missionMeta.droneName ?? '—'} (SN: ${missionMeta.droneSerial ?? '—'})`,
+    `Оператор: ${missionMeta.operatorName ?? '—'}`,
+  ];
+  return lines.join('\n');
+}
+
+function exportSectorsToKml(sectors, documentName = 'Секторы Aero-Planer', missionMeta = null) {
+  const description = buildPlacemarkDescription(missionMeta);
+  const descriptionBlock = description
+    ? `\n    <description>${escapeXml(description)}</description>`
+    : '';
+
   const placemarks = sectors
     .map((sector) => {
       let ring = null;
@@ -113,7 +181,7 @@ function exportSectorsToKml(sectors, documentName = 'Секторы Aero-Planer'
   const body = placemarks
     .map(
       (item) => `  <Placemark>
-    <name>${escapeXml(item.name)}</name>
+    <name>${escapeXml(item.name)}</name>${descriptionBlock}
     <styleUrl>#sector</styleUrl>
     <Polygon>
       <outerBoundaryIs>
@@ -165,36 +233,46 @@ function prepareSectorFromKmlPlacemark(placemark) {
   };
 }
 
-function lineStringToKmlCoordinates(geoJsonLineString) {
-  let geometry = geoJsonLineString;
-  if (typeof geometry === 'string') {
-    try {
-      geometry = JSON.parse(geometry);
-    } catch {
-      return null;
-    }
+function buildRouteGeometryXml(routeGeometry) {
+  const kmlGeometry = geoJsonToKmlGeometry(routeGeometry);
+  if (!kmlGeometry) return null;
+
+  if (kmlGeometry.type === 'LineString') {
+    return `<LineString>
+      <coordinates>${kmlGeometry.coordinates}</coordinates>
+    </LineString>`;
   }
-  const coords = geometry?.coordinates;
-  if (!Array.isArray(coords) || coords.length < 2) return null;
-  return coords
-    .filter((pair) => Array.isArray(pair) && pair.length >= 2)
-    .map(([lon, lat]) => `${lon},${lat},0`)
-    .join(' ');
+
+  if (kmlGeometry.type === 'Polygon') {
+    return `<Polygon>
+      <outerBoundaryIs>
+        <LinearRing>
+          <coordinates>${kmlGeometry.coordinates}</coordinates>
+        </LinearRing>
+      </outerBoundaryIs>
+    </Polygon>`;
+  }
+
+  return null;
 }
 
-function exportMissionToKml(sector, missionTitle, routeGeometry = null) {
-  const sectorKml = exportSectorsToKml([sector], missionTitle || sector.sector_name);
-  const routeCoords = routeGeometry ? lineStringToKmlCoordinates(routeGeometry) : null;
-  if (!routeCoords) {
+function exportMissionToKml(sector, missionMeta, routeGeometry = null) {
+  const title = missionMeta?.title ?? sector.sector_name;
+  const sectorKml = exportSectorsToKml([sector], title, missionMeta);
+  const routeXml = routeGeometry ? buildRouteGeometryXml(routeGeometry) : null;
+  if (!routeXml) {
     return sectorKml;
   }
 
+  const description = buildPlacemarkDescription(missionMeta);
+  const descriptionBlock = description
+    ? `\n    <description>${escapeXml(description)}</description>`
+    : '';
+
   const routePlacemark = `  <Placemark>
-    <name>${escapeXml(`Маршрут: ${missionTitle || sector.sector_name}`)}</name>
+    <name>${escapeXml(`Маршрут: ${title}`)}</name>${descriptionBlock}
     <styleUrl>#route</styleUrl>
-    <LineString>
-      <coordinates>${routeCoords}</coordinates>
-    </LineString>
+    ${routeXml}
   </Placemark>`;
 
   return sectorKml.replace(
@@ -214,4 +292,5 @@ module.exports = {
   prepareSectorFromKmlPlacemark,
   ringToKmlCoordinates,
   lineStringToKmlCoordinates,
+  geoJsonToKmlGeometry,
 };

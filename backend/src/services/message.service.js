@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { get, all, run } = require('../db/pool');
 const rbac = require('../lib/rbac');
+const { emitToUser } = require('../sockets/emitter');
 
 async function getUsersForChat(sessionOperatorId, sessionRole, searchQuery) {
   if (!rbac.PERMISSIONS.messagesRead.includes(sessionRole)) {
@@ -43,6 +44,9 @@ async function sendMessage(sessionOperatorId, sessionRole, senderId, receiverId,
      WHERE m.id = ?`,
     [id],
   );
+
+  emitToUser(receiverId, 'chat:message', message);
+  emitToUser(senderId, 'chat:message', message);
 
   return { ok: true, data: message };
 }

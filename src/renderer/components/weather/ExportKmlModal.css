@@ -21,7 +21,11 @@
   position: relative;
   z-index: 1;
   pointer-events: auto;
-  width: min(100%, 26rem);
+  width: calc(100% - 2rem);
+  max-width: 26rem;
+  max-height: 85vh;
+  overflow-y: auto;
+  margin: 0 auto;
   padding: 1.5rem;
   border-radius: var(--radius-lg);
   background: var(--surface-elevated);

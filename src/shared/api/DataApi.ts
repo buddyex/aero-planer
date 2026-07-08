@@ -3,6 +3,9 @@ import type {
   AuditLogFilters,
   AuditLogPage,
   AuthUserRow,
+  DashboardStatsRow,
+  MissionRow,
+  OperatorListRow,
   BatteryInspectionLogRow,
   BatteryInspectionPayload,
   BatteryRow,
@@ -33,7 +36,7 @@ export interface DataApi {
   getOperatorProfile: (operatorId: number) => Promise<ApiResult<OperatorProfileRow>>;
   getAuditLogs: (limit?: number, sinceTimestamp?: string) => Promise<ApiResult>;
 
-  getAllOperators: () => Promise<ApiResult<AuthUserRow[]>>;
+  getAllOperators: () => Promise<ApiResult<OperatorListRow[]>>;
   createOperator: (payload: {
     full_name: string;
     login: string;
@@ -72,8 +75,8 @@ export interface DataApi {
     maintenance_date?: string;
   }) => Promise<ApiResult>;
 
-  getDashboardStats: () => Promise<ApiResult>;
-  getMissions: () => Promise<ApiResult>;
+  getDashboardStats: () => Promise<ApiResult<DashboardStatsRow>>;
+  getMissions: () => Promise<ApiResult<MissionRow[]>>;
   createMission: (payload: {
     title: string;
     operator_id: number;

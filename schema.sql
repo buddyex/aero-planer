@@ -265,8 +265,8 @@ BEGIN
     SELECT status INTO v_battery_status FROM batteries WHERE id = NEW.battery_id;
     SELECT role, duty_status INTO v_op_role, v_op_duty FROM operators WHERE id = NEW.operator_id;
 
-    IF v_flight_hours > 100.0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ошибка АСОИУ: Превышен лимит налёта (>100 ч). Требуется плановое ТО.';
+    IF v_flight_hours >= 100.0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ошибка АСОИУ: Превышен лимит налёта (>=100 ч). Требуется плановое ТО.';
     END IF;
     IF NEW.battery_id IS NULL THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ошибка АСОИУ: Не указан аккумулятор (АКБ) для миссии.';
@@ -450,14 +450,17 @@ BEGIN
             UPDATE drones SET status = 'В полете' WHERE id = NEW.drone_id;
         END IF;
         IF NEW.status IN ('Завершено', 'Отменено') AND OLD.status IN ('Выполняется', 'К выполнению') THEN
-            UPDATE drones SET status = 'Готов'
-            WHERE id = NEW.drone_id
-              AND NOT EXISTS (
-                SELECT 1 FROM maintenance_logs ml
-                WHERE ml.drone_id = NEW.drone_id
-                  AND ml.closed_at IS NULL
-                  AND ml.work_type IN ('Плановое ТО', 'Ремонт', 'Диагностика')
-              );
+            UPDATE drones SET status = CASE
+                WHEN flight_hours >= 100.0 THEN 'На ТО'
+                WHEN NOT EXISTS (
+                    SELECT 1 FROM maintenance_logs ml
+                    WHERE ml.drone_id = NEW.drone_id
+                      AND ml.closed_at IS NULL
+                      AND ml.work_type IN ('Плановое ТО', 'Ремонт', 'Диагностика')
+                ) THEN 'Готов'
+                ELSE status
+            END
+            WHERE id = NEW.drone_id;
         END IF;
     END IF;
 END$$
@@ -503,7 +506,7 @@ CREATE TRIGGER trg_auto_block_drone_on_flight_hours
 AFTER UPDATE ON drones
 FOR EACH ROW
 BEGIN
-    IF NEW.flight_hours > 100.0 AND NEW.status NOT IN ('На ТО', 'Ремонт', 'Диагностика') THEN
+    IF NEW.flight_hours >= 100.0 AND NEW.status NOT IN ('На ТО', 'Ремонт', 'Диагностика') THEN
         UPDATE drones SET status = 'На ТО' WHERE id = NEW.id;
     END IF;
 END$$

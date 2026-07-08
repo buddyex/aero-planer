@@ -1,5 +1,6 @@
 const { get, all, run } = require('../db/pool');
 const rbac = require('../lib/rbac');
+const { validateDronePayload } = require('../lib/validate');
 const { logAction } = require('./audit.service');
 
 async function getDrones(sessionRole) {
@@ -14,13 +15,17 @@ async function addDrone(sessionOperatorId, sessionRole, droneData) {
   if (!rbac.PERMISSIONS.fleetWrite.includes(sessionRole)) {
     return { ok: false, error: 'Доступ запрещён.' };
   }
+
+  const validation = validateDronePayload(droneData);
+  if (!validation.ok) return validation;
+
   try {
     const result = await run(
       `INSERT INTO drones (name, serial_number, max_wind_speed, battery_capacity, payload_capacity, flight_time_max, status)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
-        droneData.name,
-        droneData.serial_number,
+        droneData.name.trim(),
+        droneData.serial_number.trim(),
         droneData.max_wind_speed,
         droneData.battery_capacity,
         droneData.payload_capacity,
@@ -43,17 +48,26 @@ async function updateDrone(sessionOperatorId, sessionRole, id, droneData) {
   if (!rbac.PERMISSIONS.fleetWrite.includes(sessionRole)) {
     return { ok: false, error: 'Доступ запрещён.' };
   }
+
+  const validation = validateDronePayload(droneData);
+  if (!validation.ok) return validation;
+
+  const existing = await get('SELECT status FROM drones WHERE id = ?', [id]);
+  if (!existing) {
+    return { ok: false, error: 'Борт не найден.' };
+  }
+  const status = droneData.status ?? existing.status;
   await run(
     `UPDATE drones SET name=?, serial_number=?, max_wind_speed=?, battery_capacity=?,
      payload_capacity=?, flight_time_max=?, status=? WHERE id=?`,
     [
-      droneData.name,
-      droneData.serial_number,
+      droneData.name.trim(),
+      droneData.serial_number.trim(),
       droneData.max_wind_speed,
       droneData.battery_capacity,
       droneData.payload_capacity,
       droneData.flight_time_max,
-      droneData.status,
+      status,
       id,
     ],
   );
