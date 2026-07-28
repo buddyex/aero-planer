@@ -40,10 +40,15 @@ function mapNoaaEntry(entry, lat, lon) {
   };
 }
 
+const NOAA_USER_AGENT = 'AeroPlaner/1.0 (admin@aero-planer.local)';
+
 async function fetchFromNoaa(lat, lon, options = {}) {
   const bbox = buildNoaaBbox(lat, lon);
   const url = `${NOAA_METAR_URL}?bbox=${bbox}&format=json`;
-  const payload = await weatherHttpGet(url, { timeout: options.timeoutMs });
+  const payload = await weatherHttpGet(url, {
+    timeout: options.timeoutMs,
+    headers: { 'User-Agent': NOAA_USER_AGENT },
+  });
 
   const rows = normalizeNoaaRows(payload);
   if (rows.length === 0) {
@@ -56,4 +61,5 @@ async function fetchFromNoaa(lat, lon, options = {}) {
 module.exports = {
   fetchFromNoaa,
   mapNoaaEntry,
+  NOAA_USER_AGENT,
 };

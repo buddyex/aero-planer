@@ -12,7 +12,10 @@ const systemLogger = require('../backend/src/lib/system-logger');
 const {
   fetchWeatherCascade,
   OfflineWeatherError,
+  formatProviderErrors,
+  CHECKWX_MISSING_KEY_MESSAGE,
 } = require('../backend/src/lib/weather-cascade-service');
+const { NOAA_USER_AGENT } = require('../backend/src/lib/weather-providers/noaa-provider');
 
 const LAT = 56.85;
 const LON = 53.22;
@@ -83,6 +86,8 @@ describe('WeatherCascadeService: каскадный fallback', () => {
 
     expect(result.source_used).toBe('CheckWX');
     expect(result.temp).toBe(-2);
+    expect(result.temperature).toBe(-2);
+    expect(result.precipitation).toBe('Ясно');
     expect(result.wind_speed).toBeCloseTo(4.1, 1);
     expect(result.raw_metar).toContain('METAR USII');
     expect(result.station_icao).toBe('USII');
@@ -107,12 +112,17 @@ describe('WeatherCascadeService: каскадный fallback', () => {
 
     expect(result.source_used).toBe('NOAA');
     expect(result.temp).toBe(-2);
+    expect(result.temperature).toBe(-2);
+    expect(result.precipitation).toBe('Ясно');
     expect(result.wind_speed).toBeCloseTo(8 / 1.94384, 1);
     expect(result.raw_metar).toContain('METAR USII');
 
     expect(countCallsByPattern(CHECKWX_URL_RE)).toBe(1);
     expect(countCallsByPattern(NOAA_URL_RE)).toBe(1);
     expect(countCallsByPattern(OPENMETEO_URL_RE)).toBe(0);
+
+    const noaaCall = weatherHttpGet.mock.calls.find(([url]) => NOAA_URL_RE.test(url));
+    expect(noaaCall[1].headers['User-Agent']).toBe(NOAA_USER_AGENT);
 
     expect(systemLogger.logSystemError).toHaveBeenCalledTimes(1);
     expect(systemLogger.logSystemError.mock.calls[0][0]).toMatchObject({
@@ -137,8 +147,10 @@ describe('WeatherCascadeService: каскадный fallback', () => {
 
     expect(result.source_used).toBe('OpenMeteo');
     expect(result.temp).toBe(-2);
+    expect(result.temperature).toBe(-2);
     expect(result.wind_speed).toBeCloseTo(4.1, 1);
     expect(result.conditions).toBe('Ясно');
+    expect(result.precipitation).toBe('Ясно');
     expect(result.raw_metar).toBeNull();
 
     expect(countCallsByPattern(CHECKWX_URL_RE)).toBe(1);
@@ -157,7 +169,7 @@ describe('WeatherCascadeService: каскадный fallback', () => {
     });
   });
 
-  test('4: все API недоступны → OfflineWeatherError', async () => {
+  test('4: все API недоступны → OfflineWeatherError с errors map', async () => {
     const networkError = Object.assign(new Error('getaddrinfo ENOTFOUND'), {
       code: 'ENOTFOUND',
     });
@@ -179,6 +191,11 @@ describe('WeatherCascadeService: каскадный fallback', () => {
       expect(err.code).toBe('OFFLINE_WEATHER');
       expect(err.attemptedSources).toEqual(['CheckWX', 'NOAA', 'OpenMeteo']);
       expect(err.message).toMatch(/недоступн/i);
+      expect(formatProviderErrors(err.failedSources)).toEqual({
+        checkwx: 'getaddrinfo ENOTFOUND',
+        noaa: 'getaddrinfo ENOTFOUND',
+        openMeteo: 'getaddrinfo ENOTFOUND',
+      });
     }
 
     expect(systemLogger.logSystemError).toHaveBeenCalled();
@@ -206,5 +223,70 @@ describe('WeatherCascadeService: каскадный fallback', () => {
     await fetchWeatherCascade(LAT, LON, { radiusKm: RADIUS_KM, suppressLog: true });
 
     expect(systemLogger.logSystemError).not.toHaveBeenCalled();
+  });
+
+  test('6: без CHECKWX_API_KEY → CheckWX не вызывается, ошибка Missing API Key, идёт NOAA', async () => {
+    const config = require('../backend/src/config');
+    const prevKey = config.checkWxApiKey;
+    const prevEnv = process.env.CHECKWX_API_KEY;
+    config.checkWxApiKey = '';
+    process.env.CHECKWX_API_KEY = '';
+
+    mockHttpByUrl({
+      checkwx: () => Promise.reject(new Error('CheckWX should not be called')),
+      noaa: () => Promise.resolve(noaaPayload),
+      openmeteo: () => Promise.reject(new Error('OpenMeteo should not be called')),
+    });
+
+    try {
+      const result = await fetchWeatherCascade(LAT, LON, { radiusKm: RADIUS_KM });
+
+      expect(result.source_used).toBe('NOAA');
+      expect(result.temperature).toBe(-2);
+      expect(result.precipitation).toBe('Ясно');
+      expect(countCallsByPattern(CHECKWX_URL_RE)).toBe(0);
+      expect(countCallsByPattern(NOAA_URL_RE)).toBe(1);
+
+      const noaaCall = weatherHttpGet.mock.calls.find(([url]) => NOAA_URL_RE.test(url));
+      expect(noaaCall[1].headers['User-Agent']).toBe(NOAA_USER_AGENT);
+
+      expect(result.cascadeMeta).toMatchObject({
+        failedSources: ['CheckWX'],
+        successSource: 'NOAA',
+      });
+      expect(result.cascadeMeta.failedDetails[0].message).toBe(CHECKWX_MISSING_KEY_MESSAGE);
+    } finally {
+      config.checkWxApiKey = prevKey;
+      process.env.CHECKWX_API_KEY = prevEnv;
+    }
+  });
+
+  test('7: некорректные координаты → OfflineWeatherError Invalid coordinates', async () => {
+    await expect(fetchWeatherCascade(999, LON)).rejects.toThrow(OfflineWeatherError);
+
+    try {
+      await fetchWeatherCascade(999, LON);
+    } catch (err) {
+      expect(err.code).toBe('OFFLINE_WEATHER');
+      expect(formatProviderErrors(err.failedSources)).toEqual({
+        openMeteo: 'Invalid coordinates',
+      });
+    }
+
+    expect(weatherHttpGet).not.toHaveBeenCalled();
+  });
+
+  test('8: formatProviderErrors включает HTTP status', () => {
+    const errors = formatProviderErrors([
+      { source: 'CheckWX', error: Object.assign(new Error('Unauthorized'), { status: 401 }) },
+      { source: 'NOAA', error: Object.assign(new Error('Forbidden'), { status: 403 }) },
+      { source: 'OpenMeteo', error: new Error('Invalid coordinates') },
+    ]);
+
+    expect(errors).toEqual({
+      checkwx: '401 Unauthorized',
+      noaa: '403 Forbidden',
+      openMeteo: 'Invalid coordinates',
+    });
   });
 });

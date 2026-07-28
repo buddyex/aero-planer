@@ -495,7 +495,7 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
               value={flightAltitudeM}
               onChange={(e) => setFlightAltitudeM(Number(e.target.value))}
               min={0}
-              max={500}
+              max={5000}
               step={10}
               required
             />

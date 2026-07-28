@@ -105,7 +105,7 @@ CREATE TABLE missions (
         'Выполняется','Завершено','Отменено','Отклонено'
     ) NOT NULL DEFAULT 'К выполнению',
     flight_radius_m DOUBLE NOT NULL DEFAULT 500 CHECK (flight_radius_m BETWEEN 50 AND 50000),
-    flight_altitude_m DOUBLE NOT NULL DEFAULT 120 CHECK (flight_altitude_m BETWEEN 0 AND 500),
+    flight_altitude_m DOUBLE NOT NULL DEFAULT 120 CHECK (flight_altitude_m BETWEEN 0 AND 5000),
     sync_status TINYINT NOT NULL DEFAULT 0 CHECK (sync_status IN (0, 1)),
     CONSTRAINT check_dates CHECK (start_time < end_time),
     FOREIGN KEY (operator_id) REFERENCES operators(id) ON DELETE RESTRICT,

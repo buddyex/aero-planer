@@ -5,6 +5,225 @@
   gap: 1rem;
 }
 
+/* Fullscreen HUD background map */
+.sector-map-card--hud {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  gap: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  overflow: hidden;
+}
+
+.sector-map-card--hud .sector-map-card__map {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+  border: none;
+  z-index: 0;
+}
+
+.sector-map-card__hud-toolbar {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  transform: none;
+  z-index: 1;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: max-content;
+  max-width: min(36rem, calc(100vw - 3rem));
+  padding: 0.35rem;
+  border-radius: 999px;
+  background: rgba(11, 15, 25, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(100, 116, 139, 0.35);
+  box-shadow:
+    0 10px 30px -12px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  pointer-events: auto;
+}
+
+.sector-map-card__hud-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.sector-map-card__hud-tools-toggle {
+  display: none;
+}
+
+/* Hide default Leaflet zoom (+ / −) in HUD map */
+.sector-map-card--hud .leaflet-control-zoom,
+.sector-map-card--hud .leaflet-control-attribution {
+  display: none !important;
+}
+
+.sector-map-card__hud-toolbar .map-location-search-wrap {
+  flex: 1 1 10rem;
+  max-width: 14rem;
+  min-width: 8rem;
+}
+
+.sector-map-card__hud-toolbar .map-location-search {
+  gap: 0.35rem;
+}
+
+.sector-map-card__hud-toolbar .map-location-search__input {
+  min-height: 2.15rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(71, 85, 105, 0.5);
+}
+
+.sector-map-card__hud-toolbar .map-location-search__btn {
+  min-height: 2.15rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+}
+
+.sector-map-card__hud-toolbar .sector-map-card__actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.sector-map-card__hud-toolbar .sector-map-card__btn {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(71, 85, 105, 0.55);
+  background: rgba(30, 41, 59, 0.55);
+  color: #e2e8f0;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sector-map-card__hud-toolbar .sector-map-card__btn:hover:not(:disabled) {
+  background: rgba(51, 65, 85, 0.75);
+  border-color: rgba(125, 211, 252, 0.45);
+  color: #f8fafc;
+}
+
+.sector-map-card__hud-toolbar .sector-map-card__btn--active {
+  border-color: rgba(56, 189, 248, 0.65);
+  color: #7dd3fc;
+  background: rgba(14, 165, 233, 0.15);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.2);
+}
+
+.sector-map-card__hud-alert {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  max-width: min(28rem, calc(100% - 2rem));
+  pointer-events: auto;
+}
+
+@media (max-width: 767px) {
+  .sector-map-card__hud-tools {
+    align-items: stretch;
+  }
+
+  .sector-map-card__hud-tools-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    align-self: flex-end;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0 0.85rem;
+    border-radius: 999px;
+    border: 1px solid rgba(100, 116, 139, 0.45);
+    background: rgba(11, 15, 25, 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: #e2e8f0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.55);
+  }
+
+  .sector-map-card__hud-tools:not(.sector-map-card__hud-tools--open) .sector-map-card__hud-toolbar {
+    display: none;
+  }
+
+  .sector-map-card__hud-tools--open .sector-map-card__hud-toolbar {
+    display: flex;
+    width: 100%;
+    max-width: none;
+    border-radius: 1rem;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.55rem;
+  }
+
+  .sector-map-card__hud-toolbar .map-location-search-wrap {
+    flex: 1 1 auto;
+    max-width: none;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .sector-map-card__hud-toolbar .sector-map-card__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .sector-map-card__hud-toolbar .sector-map-card__btn {
+    width: 100%;
+    justify-content: center;
+    border-radius: 0.75rem;
+    min-height: 2.75rem;
+  }
+
+  .sector-map-card__hud-alert {
+    bottom: calc(9.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (min-width: 768px) {
+  .sector-map-card__hud-tools {
+    align-items: center;
+  }
+
+  .sector-map-card__hud-tools-toggle {
+    display: none !important;
+  }
+
+  .sector-map-card__hud-tools .sector-map-card__hud-toolbar {
+    display: flex;
+  }
+}
+
 .sector-map-card__header {
   display: flex;
   flex-direction: column;

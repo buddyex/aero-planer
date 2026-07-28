@@ -7,24 +7,46 @@ import './WeatherRiskChart.css';
 
 Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
 
-export function WeatherRiskChart() {
+interface WeatherRiskChartProps {
+  /** Hide outer title/subtitle when embedded in a HUD panel that already has a heading. */
+  embedded?: boolean;
+}
+
+export function WeatherRiskChart({ embedded = false }: WeatherRiskChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartRef = useRef<Chart | null>(null);
   const { isDark } = useTheme();
   const { sectors, getSectorRiskDistribution } = useAppData();
   const distribution = getSectorRiskDistribution();
   const total = sectors.length;
+  const low = distribution.Низкий;
+  const mid = distribution.Средний;
+  const high = distribution.Высокий;
 
   useEffect(() => {
-    if (total === 0) return;
+    if (total === 0) {
+      chartRef.current?.destroy();
+      chartRef.current = null;
+      return;
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const textColor = isDark ? '#94a3b8' : '#64748b';
     const borderColor = isDark ? 'rgba(15, 23, 42, 0.8)' : 'rgba(255, 255, 255, 0.9)';
+    const values = [low, mid, high];
 
     if (chartRef.current) {
-      chartRef.current.destroy();
+      const chart = chartRef.current;
+      chart.data.datasets[0].data = values;
+      chart.data.datasets[0].borderColor = borderColor;
+      if (chart.options.plugins?.legend?.labels) {
+        chart.options.plugins.legend.labels.color = textColor;
+      }
+      // 'none' mode: update data without replaying entrance animation
+      chart.update('none');
+      return;
     }
 
     chartRef.current = new Chart(canvas, {
@@ -33,7 +55,7 @@ export function WeatherRiskChart() {
         labels: ['Низкий', 'Средний', 'Высокий'],
         datasets: [
           {
-            data: [distribution.Низкий, distribution.Средний, distribution.Высокий],
+            data: values,
             backgroundColor: [
               'rgba(34, 197, 94, 0.85)',
               'rgba(234, 179, 8, 0.85)',
@@ -41,23 +63,29 @@ export function WeatherRiskChart() {
             ],
             borderColor,
             borderWidth: 2,
-            hoverOffset: 8,
+            hoverOffset: 4,
           },
         ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
+        animations: {
+          colors: false,
+          numbers: false,
+        },
         cutout: '68%',
         plugins: {
           legend: {
+            display: !embedded,
             position: 'bottom',
             labels: {
               color: textColor,
-              padding: 16,
+              padding: 12,
               usePointStyle: true,
               pointStyle: 'circle',
-              font: { family: 'Inter', size: 12 },
+              font: { family: 'Inter', size: 11 },
             },
           },
           tooltip: {
@@ -78,21 +106,27 @@ export function WeatherRiskChart() {
         },
       },
     });
+  }, [low, mid, high, total, isDark, embedded]);
 
+  useEffect(() => {
     return () => {
       chartRef.current?.destroy();
       chartRef.current = null;
     };
-  }, [distribution, isDark, total]);
+  }, []);
 
   return (
-    <GlassCard accent className="weather-risk-chart">
-      <div className="weather-risk-chart__header">
-        <h2 className="section-title">Метеорологическая обстановка</h2>
-      </div>
-      <p className="section-subtitle">
-        Распределение секторов по уровню погодного риска
-      </p>
+    <GlassCard accent className={`weather-risk-chart${embedded ? ' weather-risk-chart--embedded' : ''}`}>
+      {!embedded && (
+        <>
+          <div className="weather-risk-chart__header">
+            <h2 className="section-title">Метеорологическая обстановка</h2>
+          </div>
+          <p className="section-subtitle">
+            Распределение секторов по уровню погодного риска
+          </p>
+        </>
+      )}
       {total === 0 ? (
         <p className="weather-risk-chart__empty">Нет секторов для отображения статистики риска.</p>
       ) : (
@@ -109,7 +143,10 @@ export function WeatherRiskChart() {
               const count = distribution[level];
               const pct = total > 0 ? Math.round((count / total) * 100) : 0;
               return (
-                <div key={level} className={`risk-stat risk-stat--${level === 'Низкий' ? 'low' : level === 'Средний' ? 'medium' : 'high'}`}>
+                <div
+                  key={level}
+                  className={`risk-stat risk-stat--${level === 'Низкий' ? 'low' : level === 'Средний' ? 'medium' : 'high'}`}
+                >
                   <span className="risk-stat__value">{pct}%</span>
                   <span className="risk-stat__label">{level}</span>
                   <span className="risk-stat__count">{count} сек.</span>

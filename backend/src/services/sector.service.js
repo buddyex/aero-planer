@@ -8,7 +8,11 @@ const {
 } = require('../lib/validate');
 const { logAction } = require('./audit.service');
 const kmlService = require('./kml.service');
-const { fetchWeatherCascade, OfflineWeatherError } = require('../lib/weather-cascade-service');
+const {
+  fetchWeatherCascade,
+  OfflineWeatherError,
+  formatProviderErrors,
+} = require('../lib/weather-cascade-service');
 
 const ACTIVE_SECTOR_SQL = 'is_active = 1';
 
@@ -175,6 +179,18 @@ async function getLatestCachedWeatherTimestamp() {
   return row?.cachedAt ?? null;
 }
 
+function buildOfflineWeatherResponse(error) {
+  const errors = formatProviderErrors(error?.failedSources || []);
+  return {
+    ok: false,
+    success: false,
+    message: 'Не удалось обновить метеоданные',
+    error: error?.message || 'OFFLINE_WEATHER',
+    code: 'OFFLINE_WEATHER',
+    errors,
+  };
+}
+
 async function syncWeatherAPI(sessionOperatorId, sessionRole, sectorId, lat, lon, options = {}) {
   if (!rbac.PERMISSIONS.weatherRead.includes(sessionRole)) {
     return { ok: false, error: 'FORBIDDEN' };
@@ -206,14 +222,19 @@ async function syncWeatherAPI(sessionOperatorId, sessionRole, sectorId, lat, lon
     return { ok: true, data: log, source: result.source_used };
   } catch (error) {
     if (error instanceof OfflineWeatherError || error?.code === 'OFFLINE_WEATHER') {
-      return { ok: false, error: error.message, code: 'OFFLINE_WEATHER' };
+      return buildOfflineWeatherResponse(error);
     }
-    return { ok: false, error: error.message };
+    return {
+      ok: false,
+      success: false,
+      message: 'Не удалось обновить метеоданные',
+      error: error.message,
+    };
   }
 }
 
-function buildCachedWeatherResponse({ sectors, results, cachedAt, failureReason }) {
-  return {
+function buildCachedWeatherResponse({ sectors, results, cachedAt, failureReason, errors }) {
+  const response = {
     ok: true,
     data: results,
     syncedAt: new Date().toISOString(),
@@ -225,6 +246,10 @@ function buildCachedWeatherResponse({ sectors, results, cachedAt, failureReason 
     cachedAt,
     failureReason,
   };
+  if (errors && Object.keys(errors).length > 0) {
+    response.errors = errors;
+  }
+  return response;
 }
 
 async function syncAllSectorsWeather(sessionOperatorId, sessionRole) {
@@ -266,12 +291,15 @@ async function syncAllSectorsWeather(sessionOperatorId, sessionRole) {
         results,
         cachedAt,
         failureReason: 'Погодные API недоступны.',
+        errors: probe.errors,
       });
     }
     return {
       ok: false,
+      success: false,
       error: 'OFFLINE_WEATHER',
       message: 'Все погодные API недоступны. Введите данные вручную для допуска к полётам.',
+      errors: probe.errors || {},
     };
   }
 
@@ -294,6 +322,7 @@ async function syncAllSectorsWeather(sessionOperatorId, sessionRole) {
   const freshCount = results.filter((r) => r.ok).length;
 
   if (freshCount === 0) {
+    const offlineResult = results.find((r) => r.code === 'OFFLINE_WEATHER' && r.errors);
     const cachedAt = await getLatestCachedWeatherTimestamp();
     if (cachedAt) {
       return buildCachedWeatherResponse({
@@ -301,12 +330,15 @@ async function syncAllSectorsWeather(sessionOperatorId, sessionRole) {
         results,
         cachedAt,
         failureReason: 'Не удалось обновить метеоданные из внешних источников.',
+        errors: offlineResult?.errors,
       });
     }
     return {
       ok: false,
+      success: false,
       error: 'OFFLINE_WEATHER',
       message: 'Все погодные API недоступны. Введите данные вручную для допуска к полётам.',
+      errors: offlineResult?.errors || {},
     };
   }
 
@@ -359,7 +391,15 @@ async function getWeather(lat, lon) {
       coordinates: { lat: parseFloat(lat), lon: parseFloat(lon) },
     };
   } catch (error) {
-    return { ok: false, error: error.message };
+    if (error instanceof OfflineWeatherError || error?.code === 'OFFLINE_WEATHER') {
+      return buildOfflineWeatherResponse(error);
+    }
+    return {
+      ok: false,
+      success: false,
+      message: 'Не удалось обновить метеоданные',
+      error: error.message,
+    };
   }
 }
 

@@ -49,11 +49,13 @@ export function formatDateTime(date: Date): string {
 }
 
 export function formatDisplayTime(value: string): string {
+  if (!value?.trim()) return '—';
   const d = value.includes('T') ? new Date(value) : parseMissionTime(value);
-  if (Number.isNaN(d.getTime())) return value;
+  if (Number.isNaN(d.getTime())) return value || '—';
   return d.toLocaleString('ru-RU', {
     day: '2-digit',
     month: '2-digit',
+    year: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
   });

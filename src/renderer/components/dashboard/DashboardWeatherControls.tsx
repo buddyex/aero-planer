@@ -1,8 +1,18 @@
 import { useAppData } from '../../context/AppDataContext';
 import { formatDisplayTime } from '../../utils/weather';
+import { cn } from '../../utils/cn';
 import './DashboardWeatherControls.css';
 
-export function DashboardWeatherControls() {
+interface DashboardWeatherControlsProps {
+  /** Icon-only sync button for dense chrome (mobile HUD). */
+  compact?: boolean;
+  className?: string;
+}
+
+export function DashboardWeatherControls({
+  compact = false,
+  className,
+}: DashboardWeatherControlsProps) {
   const {
     syncWeatherFromApi,
     isSyncingWeather,
@@ -15,8 +25,30 @@ export function DashboardWeatherControls() {
     syncWeatherFromApi('cascade');
   };
 
+  if (compact) {
+    return (
+      <button
+        type="button"
+        className={cn('dashboard-weather-controls__compact', className)}
+        onClick={handleRefresh}
+        disabled={isSyncingWeather}
+        title="Обновить погоду"
+        aria-label={isSyncingWeather ? 'Обновление погоды…' : 'Обновить погоду'}
+      >
+        {isSyncingWeather ? (
+          <span className="dashboard-weather-controls__spinner" aria-hidden />
+        ) : (
+          <span aria-hidden>⟳</span>
+        )}
+      </button>
+    );
+  }
+
   return (
-    <section className="dashboard-weather-controls" aria-label="Управление метеоданными">
+    <section
+      className={cn('dashboard-weather-controls', className)}
+      aria-label="Управление метеоданными"
+    >
       <div className="dashboard-weather-controls__row">
         <button
           type="button"

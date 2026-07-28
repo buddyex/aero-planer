@@ -1,8 +1,8 @@
 .pending-approvals {
-  background: var(--glass-bg, rgba(15, 23, 42, 0.55));
-  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.2));
-  border-radius: 12px;
-  padding: 0.875rem 1.25rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
 }
 
 .pending-approvals__header {
@@ -10,60 +10,120 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.875rem;
 }
 
 .pending-approvals__title {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 0.625rem;
   font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+@media (min-width: 640px) {
+  .pending-approvals__title {
+    font-size: 0.75rem;
+  }
 }
 
 .pending-approvals__count {
+  font-family: 'JetBrains Mono', monospace;
   font-size: 0.85rem;
-  color: var(--text-muted, #94a3b8);
+  color: #94a3b8;
 }
 
 .pending-approvals__list {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .pending-approvals__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .pending-approvals__list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.pending-approvals__list-item {
+  min-width: 0;
 }
 
 .pending-approvals__item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
   width: 100%;
+  max-width: 100%;
   text-align: left;
-  border: 1px solid rgba(148, 163, 184, 0.15);
-  border-radius: 8px;
-  background: rgba(30, 41, 59, 0.45);
-  padding: 0.65rem 0.85rem;
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  border-radius: 0.75rem;
+  background: #1a2235;
+  padding: 0.875rem 1rem;
   cursor: pointer;
-  color: inherit;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  color: #e2e8f0;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 .pending-approvals__item:hover {
   border-color: rgba(96, 165, 250, 0.45);
-  background: rgba(30, 58, 95, 0.5);
+  background: #232d42;
 }
 
 .pending-approvals__item-title {
   display: block;
   font-weight: 600;
-  margin-bottom: 0.25rem;
+  font-size: 0.95rem;
+  color: #f1f5f9;
+  line-height: 1.3;
 }
 
-.pending-approvals__item-meta {
+.pending-approvals__item-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 0.75rem;
+}
+
+.pending-approvals__label {
   display: block;
-  font-size: 0.82rem;
-  color: var(--text-muted, #94a3b8);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 0.15rem;
+}
+
+.pending-approvals__value {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #e2e8f0;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.pending-approvals__item-author {
+  display: block;
+  font-size: 0.75rem;
+  color: #94a3b8;
 }
 
 .pending-approvals__empty {
   margin: 0;
   font-size: 0.9rem;
-  color: var(--text-muted, #94a3b8);
+  color: #94a3b8;
 }

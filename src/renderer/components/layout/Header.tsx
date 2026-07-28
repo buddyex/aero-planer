@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Moon, Sun } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import './Header.css';
 
 function formatDateTime(date: Date): string {
@@ -24,6 +26,7 @@ interface HeaderProps {
 
 export function Header({ onOpenComms, hasUnread = false, sidebarOpen = false, onMenuToggle }: HeaderProps) {
   const { user, shiftStartTime } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -56,6 +59,16 @@ export function Header({ onOpenComms, hasUnread = false, sidebarOpen = false, on
             {formatDateTime(now)}
           </time>
         </div>
+
+        <button
+          type="button"
+          className="header__theme-btn"
+          onClick={toggleTheme}
+          title={isDark ? 'Светлая тема' : 'Тёмная тема'}
+          aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
+        >
+          {isDark ? <Sun size={18} strokeWidth={2} /> : <Moon size={18} strokeWidth={2} />}
+        </button>
 
         {onOpenComms && (
           <button

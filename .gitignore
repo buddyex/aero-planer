@@ -1,6 +1,7 @@
 node_modules/
 dist/
 build/
+src_backup_before_redesign/
 .env
 .env.*
 !.env.example

@@ -12,6 +12,8 @@ const OPERATOR_ROLES = ['Администратор', 'Руководитель'
 
 const BATTERY_INSPECTION_RESULTS = ['Пройдена', 'Не пройдена'];
 
+const PRECIPITATION_VALUES = ['Ясно', 'Дождь', 'Снег', 'Туман'];
+
 function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -255,8 +257,8 @@ function validateManualWeather(sectorId, windSpeed, temperature, precipitation) 
   if (!Number.isFinite(Number(temperature))) {
     return { ok: false, error: 'Укажите температуру.' };
   }
-  if (!isNonNegativeNumber(precipitation)) {
-    return { ok: false, error: 'Укажите осадки (неотрицательное число).' };
+  if (!PRECIPITATION_VALUES.includes(precipitation)) {
+    return { ok: false, error: 'Укажите осадки: Ясно, Дождь, Снег или Туман.' };
   }
   return { ok: true };
 }

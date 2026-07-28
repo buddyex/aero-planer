@@ -27,23 +27,29 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: var(--glass-bg);
+  background: #111827;
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--glass-border-hover);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--glass-shadow), 0 0 60px var(--accent-glow);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55);
   animation: modal-slide-in 0.3s ease;
 }
 
 @media (min-width: 640px) {
   .modal {
-    width: 100%;
+    width: min(100%, 480px);
   }
 }
 
 .modal--wide {
   max-width: 560px;
+}
+
+@media (min-width: 640px) {
+  .modal--wide {
+    width: min(100%, 560px);
+  }
 }
 
 .modal__header {

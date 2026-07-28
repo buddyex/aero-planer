@@ -1,80 +1,451 @@
-.dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+/* Tactical Map HUD — floating panels over fullscreen map */
+
+.dashboard-hud {
+  min-height: 100%;
+  height: 100%;
 }
 
-.dashboard__kpi-groups {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
+@supports (height: 100dvh) {
+  .dashboard-hud {
+    min-height: 100dvh;
+  }
 }
 
-.dashboard__kpi-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.dashboard-hud__side {
+  min-height: 0;
 }
 
-.dashboard__kpi-group-title {
+/* Burger always visible on HUD — sidebar is overlay-only here */
+.dashboard-hud__menu-btn {
+  display: inline-flex;
+}
+
+.dashboard-hud__topbar {
+  position: relative;
+}
+
+.dashboard-hud__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  background: rgba(15, 23, 42, 0.55);
+  color: #e2e8f0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.dashboard-hud__icon-btn:hover {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(100, 116, 139, 0.7);
+}
+
+.dashboard-hud__icon-btn--unread {
+  position: relative;
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.45);
+}
+
+.dashboard-hud__icon-btn--unread::after {
+  content: '';
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: #38bdf8;
+}
+
+.dashboard-hud__user {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 11rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  background: rgba(15, 23, 42, 0.4);
+  text-decoration: none;
+  color: inherit;
+}
+
+.dashboard-hud__user:hover {
+  border-color: rgba(100, 116, 139, 0.7);
+  background: rgba(30, 41, 59, 0.65);
+}
+
+.dashboard-hud__user--compact {
+  max-width: none;
+  padding: 0.2rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  justify-content: center;
+}
+
+/* —— Compact tactical KPI strip (replaces nested GlassCards) —— */
+.dashboard-hud__metrics {
+  display: flex;
+  align-items: stretch;
+  flex: 0 1 auto;
+  max-width: min(40rem, 52vw);
+  min-width: 0;
   margin: 0;
-  font-size: 0.85rem;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(71, 85, 105, 0.4);
+  background: linear-gradient(
+    180deg,
+    rgba(30, 41, 59, 0.55) 0%,
+    rgba(15, 23, 42, 0.35) 100%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+.dashboard-hud__metrics--stack {
+  flex: none;
+  max-width: none;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.dashboard-hud__metrics--stack .dashboard-hud__metric {
+  border-right: 1px solid rgba(71, 85, 105, 0.35);
+  border-bottom: 1px solid rgba(71, 85, 105, 0.35);
+}
+
+.dashboard-hud__metrics--stack .dashboard-hud__metric:nth-child(2n) {
+  border-right: none;
+}
+
+.dashboard-hud__metrics--stack .dashboard-hud__metric:nth-last-child(-n + 2) {
+  border-bottom: none;
+}
+
+.dashboard-hud__metric {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.5rem 0.75rem 0.5rem 0.85rem;
+  border-right: 1px solid rgba(71, 85, 105, 0.35);
+  transition: background 0.15s ease;
+}
+
+.dashboard-hud__metric:last-child {
+  border-right: none;
+}
+
+.dashboard-hud__metric::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 2px;
+  border-radius: 1px;
+  background: rgba(56, 189, 248, 0.55);
+  opacity: 0.85;
+}
+
+.dashboard-hud__metric--success::before {
+  background: rgba(52, 211, 153, 0.75);
+}
+
+.dashboard-hud__metric--warning::before {
+  background: rgba(250, 204, 21, 0.75);
+}
+
+.dashboard-hud__metric--danger::before {
+  background: rgba(248, 113, 113, 0.8);
+}
+
+.dashboard-hud__metric:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.dashboard-hud__metric-icon {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1;
+  color: #7dd3fc;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.18);
+}
+
+.dashboard-hud__metric--success .dashboard-hud__metric-icon {
+  color: #6ee7b7;
+  background: rgba(52, 211, 153, 0.1);
+  border-color: rgba(52, 211, 153, 0.2);
+}
+
+.dashboard-hud__metric--warning .dashboard-hud__metric-icon {
+  color: #fde047;
+  background: rgba(250, 204, 21, 0.1);
+  border-color: rgba(250, 204, 21, 0.2);
+}
+
+.dashboard-hud__metric--danger .dashboard-hud__metric-icon {
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(248, 113, 113, 0.22);
+}
+
+.dashboard-hud__metric-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.dashboard-hud__metric-value {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: #f8fafc;
+}
+
+.dashboard-hud__metric--success .dashboard-hud__metric-value {
+  color: #6ee7b7;
+}
+
+.dashboard-hud__metric--warning .dashboard-hud__metric-value {
+  color: #fde047;
+}
+
+.dashboard-hud__metric--danger .dashboard-hud__metric-value {
+  color: #fca5a5;
+}
+
+.dashboard-hud__metric-label {
+  font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: #cbd5e1;
+  white-space: normal;
+  line-height: 1.15;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.dashboard__kpi {
+.dashboard-hud__avatar {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  background: rgba(56, 189, 248, 0.18);
+  color: #7dd3fc;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
-.dashboard__kpi-group:last-child .dashboard__kpi {
-  grid-template-columns: repeat(4, 1fr);
+.dashboard-hud__user--compact .dashboard-hud__avatar {
+  width: 2rem;
+  height: 2rem;
 }
 
-.dashboard__kpi-group:last-child .dashboard__kpi > * {
-  grid-column: span 2;
+.dashboard-hud__weather-controls {
+  font-size: 0.75rem;
+  width: auto;
 }
 
-.dashboard__grid {
+.dashboard-hud__weather-controls .dashboard-weather-controls {
+  width: auto;
+  gap: 0;
+}
+
+.dashboard-hud__weather-controls .dashboard-weather-controls__row {
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  align-items: center;
+  width: auto;
+}
+
+.dashboard-hud__weather-controls .dashboard-weather-controls__sync {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.dashboard-hud__weather-controls .dashboard-weather-controls__meta {
+  display: none;
+}
+
+.dashboard-hud__weather-controls .dashboard-weather-controls__status {
+  display: none;
+}
+
+/* —— Mobile map-first HUD —— */
+.dashboard-hud__mobile-chrome {
+  border-radius: 1rem;
+}
+
+.dashboard-hud__peek {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 1.5rem;
-  align-items: stretch;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.15rem 0 0.35rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
 }
 
-.dashboard__manual-weather {
-  margin-top: 0.5rem;
+.dashboard-hud__peek-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
-@media (max-width: 1200px) {
-  .dashboard__kpi {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .dashboard__kpi-group:last-child .dashboard__kpi {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .dashboard__kpi-group:last-child .dashboard__kpi > * {
-    grid-column: span 1;
-  }
-
-  .dashboard__grid {
-    grid-template-columns: 1fr;
-  }
+.dashboard-hud__peek-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
 }
 
-@media (max-width: 600px) {
-  .dashboard__kpi,
-  .dashboard__kpi-group:last-child .dashboard__kpi {
-    grid-template-columns: 1fr;
-  }
+.dashboard-hud__peek-value {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-  .dashboard__kpi-group:last-child .dashboard__kpi > * {
-    grid-column: span 1;
-  }
+.dashboard-hud__tabs {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.15rem;
+  scrollbar-width: none;
+}
+
+.dashboard-hud__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.dashboard-hud__tab {
+  flex: 1 0 auto;
+  min-height: 2.75rem;
+  min-width: 4.5rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(71, 85, 105, 0.45);
+  background: rgba(15, 23, 42, 0.45);
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.dashboard-hud__tab--active {
+  border-color: rgba(56, 189, 248, 0.55);
+  background: rgba(14, 165, 233, 0.16);
+  color: #e0f2fe;
+}
+
+.dashboard-hud__tab:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.7);
+  outline-offset: 2px;
+}
+
+/* Strip nested GlassCard chrome inside HUD panels */
+.dashboard-hud__missions .upcoming-missions,
+.dashboard-hud__missions .glass-card,
+.dashboard-hud__weather .weather-risk-chart,
+.dashboard-hud__weather .glass-card,
+.dashboard-hud__approvals .glass-card,
+.dashboard-hud__approvals .pending-approvals {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  backdrop-filter: none;
+  padding: 0;
+}
+
+.dashboard-hud__weather .weather-risk-chart__canvas-wrap {
+  height: 140px;
+}
+
+.dashboard-hud__weather .weather-risk-chart__body {
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin-top: 0;
+}
+
+.dashboard-hud__weather .weather-risk-chart__center {
+  padding-bottom: 0;
+}
+
+.dashboard-hud__weather .risk-stat {
+  padding: 0.5rem 0.75rem;
+}
+
+.dashboard-hud__weather .risk-stat:hover {
+  transform: none;
+}
+
+.weather-risk-chart--embedded {
+  padding: 0;
+}
+
+/* Missions list fills remaining left-panel height without mid-gap */
+.dashboard-hud__missions .upcoming-missions,
+.dashboard-hud__missions .glass-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dashboard-hud__missions .upcoming-missions__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

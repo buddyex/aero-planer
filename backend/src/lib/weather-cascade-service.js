@@ -4,6 +4,14 @@ const { fetchFromNoaa } = require('./weather-providers/noaa-provider');
 const { fetchFromOpenMeteo } = require('./weather-providers/openmeteo-provider');
 const systemLogger = require('./system-logger');
 
+const SOURCE_ERROR_KEYS = {
+  CheckWX: 'checkwx',
+  NOAA: 'noaa',
+  OpenMeteo: 'openMeteo',
+};
+
+const CHECKWX_MISSING_KEY_MESSAGE = '401 Unauthorized (Missing API Key)';
+
 class OfflineWeatherError extends Error {
   constructor(message, { attemptedSources = [], lastError = null, failedSources = [] } = {}) {
     super(message);
@@ -18,17 +26,53 @@ class OfflineWeatherError extends Error {
 function parseCoordinates(lat, lon) {
   const latitude = parseFloat(lat);
   const longitude = parseFloat(lon);
-  if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
     return null;
   }
   return { latitude, longitude };
+}
+
+function formatProviderErrorMessage(error) {
+  if (!error) return 'Unknown error';
+  const status = error.status ?? error.response?.status;
+  const message = error.message || String(error);
+  if (status != null && !message.includes(String(status))) {
+    return `${status} ${message}`;
+  }
+  return message;
+}
+
+/**
+ * Maps cascade failedSources to API error keys: checkwx / noaa / openMeteo.
+ */
+function formatProviderErrors(failedSources = []) {
+  const errors = {};
+  for (const entry of failedSources) {
+    const key = SOURCE_ERROR_KEYS[entry.source] || String(entry.source).toLowerCase();
+    errors[key] = formatProviderErrorMessage(entry.error);
+  }
+  return errors;
+}
+
+function normalizeCascadeResult(result) {
+  return {
+    ...result,
+    temperature: result.temperature ?? result.temp,
+    precipitation: result.precipitation ?? result.conditions,
+  };
 }
 
 function buildCascadeMeta(failedSources, successSource) {
   if (failedSources.length === 0) return null;
   return {
     failedSources: failedSources.map((f) => f.source),
-    failedDetails: failedSources.map((f) => ({ source: f.source, message: f.error.message })),
+    failedDetails: failedSources.map((f) => ({
+      source: f.source,
+      message: formatProviderErrorMessage(f.error),
+    })),
     successSource,
   };
 }
@@ -36,13 +80,17 @@ function buildCascadeMeta(failedSources, successSource) {
 function logCascadeFallback(failedSources, result, latitude, longitude) {
   const failedNames = failedSources.map((f) => f.source);
   systemLogger.logSystemError({
-    error: new Error(failedSources.map((f) => `${f.source}: ${f.error.message}`).join(' | ')),
+    error: new Error(failedSources.map((f) => `${f.source}: ${formatProviderErrorMessage(f.error)}`).join(' | ')),
     subsystem: 'weather',
     location: 'fetchWeatherCascade',
     severity: 'warning',
     context: {
       event: 'weather-cascade-fallback',
       failedSources: failedNames,
+      failedDetails: failedSources.map((f) => ({
+        source: f.source,
+        message: formatProviderErrorMessage(f.error),
+      })),
       successSource: result.source_used,
       latitude,
       longitude,
@@ -60,6 +108,10 @@ function logCascadeTotalFailure(attemptedSources, failedSources, latitude, longi
       event: 'weather-cascade-total-failure',
       attemptedSources,
       failedSources: failedSources.map((f) => f.source),
+      failedDetails: failedSources.map((f) => ({
+        source: f.source,
+        message: formatProviderErrorMessage(f.error),
+      })),
       latitude,
       longitude,
     },
@@ -67,14 +119,15 @@ function logCascadeTotalFailure(attemptedSources, failedSources, latitude, longi
 }
 
 function finishSuccess(result, failedSources, latitude, longitude, suppressLog) {
-  const cascadeMeta = buildCascadeMeta(failedSources, result.source_used);
+  const normalized = normalizeCascadeResult(result);
+  const cascadeMeta = buildCascadeMeta(failedSources, normalized.source_used);
   if (cascadeMeta && !suppressLog) {
-    logCascadeFallback(failedSources, result, latitude, longitude);
+    logCascadeFallback(failedSources, normalized, latitude, longitude);
   }
   if (cascadeMeta) {
-    return { ...result, cascadeMeta };
+    return { ...normalized, cascadeMeta };
   }
-  return result;
+  return normalized;
 }
 
 /**
@@ -84,7 +137,13 @@ function finishSuccess(result, failedSources, latitude, longitude, suppressLog) 
 async function fetchWeatherCascade(lat, lon, options = {}) {
   const coords = parseCoordinates(lat, lon);
   if (!coords) {
-    throw new Error('Некорректные координаты.');
+    throw new OfflineWeatherError('Некорректные координаты.', {
+      attemptedSources: [],
+      failedSources: [
+        { source: 'OpenMeteo', error: new Error('Invalid coordinates') },
+      ],
+      lastError: new Error('Invalid coordinates'),
+    });
   }
 
   const { latitude, longitude } = coords;
@@ -102,6 +161,12 @@ async function fetchWeatherCascade(lat, lon, options = {}) {
     } catch (error) {
       failedSources.push({ source: 'CheckWX', error });
     }
+  } else {
+    attemptedSources.push('CheckWX');
+    failedSources.push({
+      source: 'CheckWX',
+      error: new Error(CHECKWX_MISSING_KEY_MESSAGE),
+    });
   }
 
   attemptedSources.push('NOAA');
@@ -135,4 +200,6 @@ async function fetchWeatherCascade(lat, lon, options = {}) {
 module.exports = {
   fetchWeatherCascade,
   OfflineWeatherError,
+  formatProviderErrors,
+  CHECKWX_MISSING_KEY_MESSAGE,
 };

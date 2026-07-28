@@ -14,33 +14,49 @@ export function WeatherManualPanel() {
   const [temperature, setTemperature] = useState('10');
   const [precipitation, setPrecipitation] = useState<Precipitation>('Ясно');
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (sectors.length === 0) {
       setSectorId(0);
       return;
     }
-    if (!sectors.some((sector) => sector.id === sectorId)) {
-      setSectorId(sectors[0].id);
+    if (!sectors.some((sector) => Number(sector.id) === Number(sectorId))) {
+      setSectorId(Number(sectors[0].id));
     }
   }, [sectors, sectorId]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setSuccess(false);
 
     if (sectors.length === 0 || sectorId <= 0) return;
     const wind = Number(windSpeed);
     const temp = Number(temperature);
-    if (Number.isNaN(wind) || Number.isNaN(temp)) return;
+    if (Number.isNaN(wind) || Number.isNaN(temp)) {
+      setError('Укажите корректные значения ветра и температуры.');
+      return;
+    }
 
-    await applyManualSectorCorrection({
-      sector_id: sectorId,
-      wind_speed: wind,
-      temperature: temp,
-      precipitation,
-    });
-    setSuccess(true);
-    setTimeout(() => setSuccess(false), 2500);
+    setSubmitting(true);
+    try {
+      const result = await applyManualSectorCorrection({
+        sector_id: sectorId,
+        wind_speed: wind,
+        temperature: temp,
+        precipitation,
+      });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2500);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -115,13 +131,18 @@ export function WeatherManualPanel() {
               Корректировка применена — риск сектора пересчитан
             </p>
           )}
+          {error && (
+            <p className="weather-manual-panel__error" role="alert">
+              {error}
+            </p>
+          )}
 
           <button
             type="submit"
             className="btn btn--primary weather-manual-panel__submit"
-            disabled={sectors.length === 0}
+            disabled={sectors.length === 0 || submitting}
           >
-            Применить корректировку
+            {submitting ? 'Сохранение…' : 'Применить корректировку'}
           </button>
         </fieldset>
       </form>

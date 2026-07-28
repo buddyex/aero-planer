@@ -3,10 +3,10 @@
 [data-theme='dark'] {
   --sidebar-width: 260px;
 
-  --bg-base: #0a0e1a;
-  --bg-gradient: linear-gradient(145deg, #0a0e1a 0%, #111827 40%, #0f172a 100%);
-  --bg-glow-1: rgba(56, 189, 248, 0.12);
-  --bg-glow-2: rgba(99, 102, 241, 0.1);
+  --bg-base: #0b0f19;
+  --bg-gradient: #0b0f19;
+  --bg-glow-1: rgba(56, 189, 248, 0.08);
+  --bg-glow-2: rgba(99, 102, 241, 0.06);
 
   --sidebar-bg: rgba(15, 23, 42, 0.75);
   --header-bg: rgba(15, 23, 42, 0.6);
@@ -113,14 +113,22 @@ select,
 
 #root {
   height: 100vh;
+  height: 100dvh;
 }
 
 .section-title {
   margin: 0;
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+@media (min-width: 640px) {
+  .section-title {
+    font-size: 0.75rem;
+  }
 }
 
 .section-subtitle {
@@ -145,4 +153,29 @@ select,
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--glass-border-hover);
+}
+
+/* Slim translucent scrollbar for timelines / tables */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.35);
+  border-radius: 999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.55);
 }

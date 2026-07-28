@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import type { Mission, RiskLevel } from '../../types';
 import { MISSION_STATUS_SHORT } from '../../utils/missions';
@@ -9,7 +9,9 @@ import './GanttChart.css';
 
 const HOUR_MS = 60 * 60 * 1000;
 const LABEL_COLUMN_WIDTH = 240;
-const TRACK_MIN_WIDTH = 600;
+const TRACK_MIN_WIDTH = 1200;
+/** Pixels per hour — enough room for hourly tick labels. */
+const PX_PER_HOUR = 72;
 
 function riskBarClass(risk: RiskLevel | undefined): string {
   if (risk === 'Высокий') return 'gantt-bar--high';
@@ -50,6 +52,7 @@ interface GanttChartProps {
 export function GanttChart({ onMissionClick }: GanttChartProps) {
   const { visibleMissions: userMissions, getSectorById, getDroneById, getOperatorById } =
     useAppData();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const visibleMissions = useMemo(
     () =>
@@ -68,7 +71,7 @@ export function GanttChart({ onMissionClick }: GanttChartProps) {
       const end = new Date(now);
       end.setHours(22, 0, 0, 0);
       const tickList: Date[] = [];
-      for (let t = now.getTime(); t <= end.getTime(); t += 2 * HOUR_MS) {
+      for (let t = now.getTime(); t <= end.getTime(); t += HOUR_MS) {
         tickList.push(new Date(t));
       }
       return { rangeStart: now, rangeEnd: end, ticks: tickList };
@@ -88,7 +91,7 @@ export function GanttChart({ onMissionClick }: GanttChartProps) {
     end.setHours(end.getHours() + 2);
 
     const tickList: Date[] = [];
-    for (let t = start.getTime(); t <= end.getTime(); t += 2 * HOUR_MS) {
+    for (let t = start.getTime(); t <= end.getTime(); t += HOUR_MS) {
       tickList.push(new Date(t));
     }
 
@@ -96,6 +99,8 @@ export function GanttChart({ onMissionClick }: GanttChartProps) {
   }, [visibleMissions, hasMissions]);
 
   const totalMs = rangeEnd.getTime() - rangeStart.getTime();
+  const rangeHours = totalMs / HOUR_MS;
+  const trackMinWidth = Math.max(TRACK_MIN_WIDTH, Math.ceil(rangeHours * PX_PER_HOUR));
 
   const getBarStyle = (mission: Mission) => {
     const start = parseMissionTime(mission.start_time).getTime();
@@ -104,15 +109,34 @@ export function GanttChart({ onMissionClick }: GanttChartProps) {
     const width = ((end - start) / totalMs) * 100;
     return {
       left: `${Math.max(0, left)}%`,
-      width: `${Math.max(2.5, width)}%`,
+      width: `${Math.max(0.8, width)}%`,
       minWidth: '2.75rem',
     };
   };
 
   const chartStyle = {
     '--gantt-label-width': `${LABEL_COLUMN_WIDTH}px`,
-    '--gantt-track-min-width': `${TRACK_MIN_WIDTH}px`,
+    '--gantt-track-min-width': `${trackMinWidth}px`,
   } as CSSProperties;
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const onWheel = (event: WheelEvent) => {
+      if (el.scrollWidth <= el.clientWidth + 1) return;
+      const predominantlyVertical = Math.abs(event.deltaY) >= Math.abs(event.deltaX);
+      if (predominantlyVertical && event.deltaY !== 0) {
+        event.preventDefault();
+        el.scrollLeft += event.deltaY;
+      } else if (event.deltaX !== 0) {
+        el.scrollLeft += event.deltaX;
+      }
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [hasMissions, trackMinWidth]);
 
   const renderMissionMeta = (mission: Mission) => {
     const drone = getDroneById(mission.drone_id);
@@ -186,7 +210,8 @@ export function GanttChart({ onMissionClick }: GanttChartProps) {
 
         {/* Desktop/tablet Gantt */}
         <div
-          className={`gantt-chart__scroll hidden md:block${
+          ref={scrollRef}
+          className={`gantt-chart__scroll custom-scrollbar hidden md:block w-full overflow-x-auto pb-4${
             !hasMissions ? ' gantt-chart__scroll--empty' : ''
           }`}
         >

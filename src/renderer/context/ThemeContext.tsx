@@ -25,12 +25,18 @@ function getInitialTheme(): ThemeMode {
   return 'dark';
 }
 
+function applyThemeToDocument(theme: ThemeMode) {
+  const root = document.documentElement;
+  root.setAttribute('data-theme', theme);
+  root.classList.toggle('dark', theme === 'dark');
+  localStorage.setItem(THEME_STORAGE_KEY, theme);
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    applyThemeToDocument(theme);
   }, [theme]);
 
   const toggleTheme = useCallback(() => {

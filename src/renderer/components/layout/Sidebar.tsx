@@ -19,21 +19,27 @@ const navItems: { to: string; route: AppRoute; label: string; icon: string }[] =
 interface SidebarProps {
   open?: boolean;
   onClose?: () => void;
+  /** When true, sidebar is always an overlay (never permanently visible on lg+). */
+  overlay?: boolean;
 }
 
-export function Sidebar({ open = false, onClose }: SidebarProps) {
+export function Sidebar({ open = false, onClose, overlay = false }: SidebarProps) {
   const { user } = useAuth();
 
   const visibleItems = user
     ? navItems.filter((item) => ROUTE_ALLOWED_ROLES[item.route].includes(user.role))
     : [];
 
-  return (
-    <aside
-      className={`sidebar fixed inset-y-0 left-0 z-40 w-[var(--sidebar-width)] transform transition-transform duration-200 lg:static lg:translate-x-0 ${
+  const className = overlay
+    ? `sidebar fixed inset-y-0 left-0 z-40 w-[var(--sidebar-width)] transform transition-transform duration-200 ${
+        open ? 'translate-x-0' : '-translate-x-full'
+      }`
+    : `sidebar fixed inset-y-0 left-0 z-40 w-[var(--sidebar-width)] transform transition-transform duration-200 lg:static lg:translate-x-0 ${
         open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      }`}
-    >
+      }`;
+
+  return (
+    <aside className={className}>
       <div className="sidebar__brand">
         <div className="sidebar__logo">AP</div>
         <div className="sidebar__brand-text">

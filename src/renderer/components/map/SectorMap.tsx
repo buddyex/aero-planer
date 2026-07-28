@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Circle, MapContainer, Polygon, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { useAppData } from '../../context/AppDataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -50,8 +51,23 @@ function MapResizeHandler() {
       map.invalidateSize();
     };
     invalidate();
+    // Second pass after layout settles (HUD panels / flex)
+    const raf = window.requestAnimationFrame(() => invalidate());
     window.addEventListener('resize', invalidate);
-    return () => window.removeEventListener('resize', invalidate);
+
+    const container = map.getContainer();
+    const parent = container.parentElement;
+    let observer: ResizeObserver | null = null;
+    if (parent && typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => invalidate());
+      observer.observe(parent);
+    }
+
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener('resize', invalidate);
+      observer?.disconnect();
+    };
   }, [map]);
 
   return null;
@@ -143,7 +159,12 @@ function SectorLayer({
   );
 }
 
-export function SectorMap() {
+export interface SectorMapProps {
+  variant?: 'card' | 'hud';
+}
+
+export function SectorMap({ variant = 'card' }: SectorMapProps) {
+  const isHud = variant === 'hud';
   const { user } = useAuth();
   const {
     sectors,
@@ -158,6 +179,7 @@ export function SectorMap() {
   const canEdit = Boolean(user && canEditSectorBoundaries(user.role) && hasBackend);
 
   const [mounted, setMounted] = useState(false);
+  const [hudToolbarHost, setHudToolbarHost] = useState<HTMLElement | null>(null);
   const [pickMode, setPickMode] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editSector, setEditSector] = useState<Sector | null>(null);
@@ -166,10 +188,33 @@ export function SectorMap() {
   const [actionInfo, setActionInfo] = useState<string | null>(null);
   const [flyTarget, setFlyTarget] = useState<MapSearchTarget | null>(null);
   const [kmlBusy, setKmlBusy] = useState(false);
+  const [hudToolsOpen, setHudToolsOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!isHud) {
+      setHudToolbarHost(null);
+      return;
+    }
+
+    const bind = () => {
+      const el = document.getElementById('dashboard-hud-map-toolbar');
+      setHudToolbarHost((prev) => (prev === el ? prev : el));
+    };
+
+    bind();
+    const raf = window.requestAnimationFrame(bind);
+    const observer = new MutationObserver(bind);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      window.cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
+  }, [isHud]);
 
   const mappedSectors = useMemo(() => sectors.filter(sectorHasCoords), [sectors]);
   const sectorIdsKey = useMemo(() => mappedSectors.map((sector) => sector.id).join(','), [mappedSectors]);
@@ -266,6 +311,129 @@ export function SectorMap() {
     }
   };
 
+  const editActions = canEdit ? (
+    <div className="sector-map-card__actions">
+      <button
+        type="button"
+        className={`btn btn--ghost sector-map-card__btn${pickMode ? ' sector-map-card__btn--active' : ''}`}
+        onClick={() => setPickMode((prev) => !prev)}
+      >
+        {pickMode ? 'Кликните на карту…' : '+ На карте'}
+      </button>
+      <button
+        type="button"
+        className="btn btn--ghost sector-map-card__btn"
+        onClick={handleImportKml}
+        disabled={kmlBusy}
+      >
+        Импорт KML
+      </button>
+    </div>
+  ) : null;
+
+  const mapCanvas = (
+    <div
+      className={`sector-map-card__map${pickMode ? ' sector-map-card__map--pick' : ''}${mapBlocked ? ' sector-map-card__map--blocked' : ''}`}
+    >
+      {mounted ? (
+        <MapContainer
+          center={UDMURT_MAP_CENTER}
+          zoom={UDMURT_MAP_ZOOM}
+          zoomControl={false}
+          scrollWheelZoom={!mapBlocked}
+          keyboard={!mapBlocked}
+          attributionControl={false}
+          className="sector-map"
+        >
+          <OfflineTileLayer />
+          <MapResizeHandler />
+          <MapFlyTo target={flyTarget} />
+          <MapClickHandler enabled={pickMode} onPick={handleMapPick} />
+          {mappedSectors.map((sector) => (
+            <SectorLayer
+              key={sector.id}
+              sector={sector}
+              canEdit={canEdit}
+              onEdit={setEditSector}
+              onDelete={handleDelete}
+              onExportKml={handleExportSectorKml}
+            />
+          ))}
+        </MapContainer>
+      ) : (
+        <div className="sector-map-card__placeholder">Загрузка карты…</div>
+      )}
+    </div>
+  );
+
+  const modals = (
+    <>
+      <CreateSectorModal
+        open={modalOpen}
+        initialLat={draftCoords?.lat}
+        initialLon={draftCoords?.lon}
+        onClose={closeCreateModal}
+        onSubmit={handleCreate}
+      />
+      <EditSectorBoundaryModal
+        sector={editSector}
+        open={editSector != null}
+        onClose={closeEditSector}
+        onSubmit={updateSectorBoundary}
+      />
+    </>
+  );
+
+  if (isHud) {
+    const toolbar = (
+      <div
+        className={`sector-map-card__hud-tools pointer-events-auto${
+          hudToolsOpen ? ' sector-map-card__hud-tools--open' : ''
+        }`}
+      >
+        <button
+          type="button"
+          className="sector-map-card__hud-tools-toggle"
+          aria-expanded={hudToolsOpen}
+          aria-controls="dashboard-hud-map-tools-panel"
+          onClick={() => setHudToolsOpen((v) => !v)}
+        >
+          <span aria-hidden>{hudToolsOpen ? '✕' : '🔍'}</span>
+          <span className="sector-map-card__hud-tools-toggle-label">
+            {hudToolsOpen ? 'Закрыть' : 'Поиск'}
+          </span>
+        </button>
+        <div id="dashboard-hud-map-tools-panel" className="sector-map-card__hud-toolbar">
+          <MapLocationSearch
+            onSearchResult={(target) => {
+              setFlyTarget(target);
+              setHudToolsOpen(false);
+            }}
+          />
+          {editActions}
+        </div>
+      </div>
+    );
+
+    return (
+      <div className="sector-map-card sector-map-card--hud">
+        {hudToolbarHost ? createPortal(toolbar, hudToolbarHost) : null}
+        {actionError && (
+          <p className="sector-map-card__error sector-map-card__hud-alert" role="alert">
+            {actionError}
+          </p>
+        )}
+        {actionInfo && (
+          <p className="sector-map-card__info sector-map-card__hud-alert" role="status">
+            {actionInfo}
+          </p>
+        )}
+        {mapCanvas}
+        {modals}
+      </div>
+    );
+  }
+
   return (
     <GlassCard accent className="sector-map-card">
       <div className="sector-map-card__header">
@@ -274,27 +442,7 @@ export function SectorMap() {
             <span className="sector-map-card__title-full">Карта секторов полётов</span>
             <span className="sector-map-card__title-short">Карта секторов</span>
           </h3>
-          <div className="sector-map-card__actions">
-            {canEdit && (
-              <>
-                <button
-                  type="button"
-                  className={`btn btn--ghost sector-map-card__btn${pickMode ? ' sector-map-card__btn--active' : ''}`}
-                  onClick={() => setPickMode((prev) => !prev)}
-                >
-                  {pickMode ? 'Кликните на карту…' : '+ На карте'}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--ghost sector-map-card__btn"
-                  onClick={handleImportKml}
-                  disabled={kmlBusy}
-                >
-                  Импорт KML
-                </button>
-              </>
-            )}
-          </div>
+          {editActions}
         </div>
         <MapLocationSearch onSearchResult={setFlyTarget} />
       </div>
@@ -310,52 +458,8 @@ export function SectorMap() {
         </p>
       )}
 
-      <div
-        className={`sector-map-card__map${pickMode ? ' sector-map-card__map--pick' : ''}${mapBlocked ? ' sector-map-card__map--blocked' : ''}`}
-      >
-        {mounted ? (
-          <MapContainer
-            center={UDMURT_MAP_CENTER}
-            zoom={UDMURT_MAP_ZOOM}
-            scrollWheelZoom={!mapBlocked}
-            keyboard={!mapBlocked}
-            attributionControl={false}
-            className="sector-map"
-          >
-            <OfflineTileLayer />
-            <MapResizeHandler />
-            <MapFlyTo target={flyTarget} />
-            <MapClickHandler enabled={pickMode} onPick={handleMapPick} />
-            {mappedSectors.map((sector) => (
-              <SectorLayer
-                key={sector.id}
-                sector={sector}
-                canEdit={canEdit}
-                onEdit={setEditSector}
-                onDelete={handleDelete}
-                onExportKml={handleExportSectorKml}
-              />
-            ))}
-          </MapContainer>
-        ) : (
-          <div className="sector-map-card__placeholder">Загрузка карты…</div>
-        )}
-      </div>
-
-      <CreateSectorModal
-        open={modalOpen}
-        initialLat={draftCoords?.lat}
-        initialLon={draftCoords?.lon}
-        onClose={closeCreateModal}
-        onSubmit={handleCreate}
-      />
-
-      <EditSectorBoundaryModal
-        sector={editSector}
-        open={editSector != null}
-        onClose={closeEditSector}
-        onSubmit={updateSectorBoundary}
-      />
+      {mapCanvas}
+      {modals}
     </GlassCard>
   );
 }

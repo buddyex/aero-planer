@@ -7,10 +7,18 @@ import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import './AppLayout.css';
 
+export interface AppLayoutOutletContext {
+  onMenuToggle: () => void;
+  sidebarOpen: boolean;
+  onOpenComms: () => void;
+  hasUnread: boolean;
+}
+
 function AppLayoutInner() {
   const location = useLocation();
   const { openComms, hasUnread } = useComms();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isDashboardHud = location.pathname === '/';
 
   useEffect(() => {
     blurLeafletMaps();
@@ -28,14 +36,16 @@ function AppLayoutInner() {
 
   useEffect(() => {
     if (!sidebarOpen) return;
-    const mq = window.matchMedia('(max-width: 1023px)');
-    if (!mq.matches) return;
+    // Lock body scroll whenever overlay sidebar is open (HUD always; mobile otherwise).
+    const shouldLock =
+      isDashboardHud || window.matchMedia('(max-width: 1023px)').matches;
+    if (!shouldLock) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [sidebarOpen]);
+  }, [sidebarOpen, isDashboardHud]);
 
   useEffect(() => {
     const onFocusIn = (event: FocusEvent) => {
@@ -47,26 +57,39 @@ function AppLayoutInner() {
     return () => document.removeEventListener('focusin', onFocusIn, true);
   }, []);
 
+  const outletContext: AppLayoutOutletContext = {
+    onMenuToggle: () => setSidebarOpen((v) => !v),
+    sidebarOpen,
+    onOpenComms: () => openComms(),
+    hasUnread,
+  };
+
   return (
     <div className="app-layout">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        overlay={isDashboardHud}
+      />
       {sidebarOpen && (
         <button
           type="button"
-          className="app-layout__backdrop lg:hidden"
+          className={`app-layout__backdrop${isDashboardHud ? '' : ' lg:hidden'}`}
           aria-label="Закрыть меню"
           onClick={() => setSidebarOpen(false)}
         />
       )}
       <div className="app-layout__main">
-        <Header
-          onOpenComms={() => openComms()}
-          hasUnread={hasUnread}
-          sidebarOpen={sidebarOpen}
-          onMenuToggle={() => setSidebarOpen((v) => !v)}
-        />
-        <main className="app-layout__content">
-          <Outlet />
+        {!isDashboardHud && (
+          <Header
+            onOpenComms={() => openComms()}
+            hasUnread={hasUnread}
+            sidebarOpen={sidebarOpen}
+            onMenuToggle={() => setSidebarOpen((v) => !v)}
+          />
+        )}
+        <main className={`app-layout__content${isDashboardHud ? ' app-layout__content--hud' : ''}`}>
+          <Outlet context={outletContext} />
         </main>
       </div>
     </div>

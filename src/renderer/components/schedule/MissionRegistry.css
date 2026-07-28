@@ -11,9 +11,17 @@
 
 .mission-registry__title {
   margin: 0 0 0.25rem;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-primary);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+@media (min-width: 640px) {
+  .mission-registry__title {
+    font-size: 0.75rem;
+  }
 }
 
 .mission-registry__desc {
@@ -60,47 +68,68 @@
 
 .mission-registry__table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0 8px;
   font-size: 0.875rem;
 }
 
-.mission-registry__table th {
+.mission-registry__table thead th {
   text-align: left;
-  padding: 0.625rem 0.75rem;
-  font-size: 0.6875rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.625rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--glass-border);
+  letter-spacing: 0.1em;
+  color: #64748b;
+  border: none;
   white-space: nowrap;
+  background: transparent;
 }
 
-.mission-registry__table td {
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--glass-border);
-  color: var(--text-primary);
-  vertical-align: middle;
+@media (min-width: 640px) {
+  .mission-registry__table thead th {
+    font-size: 0.75rem;
+  }
 }
 
-.mission-registry__row {
+.mission-registry__table tbody tr.mission-registry__row {
+  background: #1a2235;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   cursor: pointer;
-  transition: background var(--transition-fast);
+  transition: background 150ms ease;
 }
 
-.mission-registry__row:hover {
-  background: var(--surface-elevated);
+.mission-registry__table tbody tr.mission-registry__row:hover {
+  background: #232d42;
+}
+
+.mission-registry__table tbody td {
+  padding: 0.875rem 0.75rem;
+  border: none;
+  color: #e2e8f0;
+  vertical-align: middle;
+  background: inherit;
+}
+
+.mission-registry__table tbody tr.mission-registry__row td:first-child {
+  border-radius: 0.75rem 0 0 0.75rem;
+}
+
+.mission-registry__table tbody tr.mission-registry__row td:last-child {
+  border-radius: 0 0.75rem 0.75rem 0;
 }
 
 .mission-registry__title-cell {
   font-weight: 600;
   max-width: 14rem;
+  color: #f1f5f9;
 }
 
 .mission-registry__time {
   white-space: nowrap;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.8125rem;
+  color: #cbd5e1;
 }
 
 .mission-registry__status {
@@ -114,26 +143,37 @@
 
 .mission-status--planned {
   background: rgba(56, 189, 248, 0.2);
-  color: #0284c7;
+  color: #7dd3fc;
 }
 
 .mission-status--active {
   background: rgba(34, 197, 94, 0.2);
-  color: #16a34a;
+  color: #86efac;
 }
 
 .mission-status--done {
-  background: rgba(148, 163, 184, 0.25);
-  color: var(--text-secondary);
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
 }
 
 .mission-status--cancelled {
   background: rgba(239, 68, 68, 0.15);
-  color: #dc2626;
+  color: #fca5a5;
 }
 
 .mission-registry__empty {
   text-align: center;
-  color: var(--text-muted);
+  color: #64748b;
   padding: 2rem !important;
+  background: transparent !important;
+}
+
+.mission-registry__table tbody tr:has(.mission-registry__empty) {
+  background: transparent;
+  box-shadow: none;
+}
+
+.mission-registry__table tbody tr:has(.mission-registry__empty) td {
+  border-radius: 0.75rem;
+  background: #1a2235;
 }

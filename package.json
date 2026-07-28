@@ -4,9 +4,10 @@
   "description": "АРМ диспетчера БПЛА — React PWA + Express + MySQL",
   "private": true,
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -n web,api \"vite\" \"npm run dev --prefix backend\"",
+    "dev:web": "vite",
     "dev:server": "npm run dev --prefix backend",
-    "dev:full": "concurrently -n web,api \"npm run dev\" \"npm run dev:server\"",
+    "dev:full": "npm run dev",
     "build": "tsc -p tsconfig.json && vite build",
     "preview": "vite preview",
     "test": "jest",
@@ -20,14 +21,18 @@
     "@vitejs/plugin-react": "^4.7.0",
     "axios": "^1.18.0",
     "chart.js": "^4.5.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.42.2",
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",
-    "lucide-react": "^1.22.0",
+    "lucide-react": "^1.24.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.18.0",
-    "socket.io-client": "^4.8.1"
+    "recharts": "^3.9.2",
+    "socket.io-client": "^4.8.1",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.8",

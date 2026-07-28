@@ -87,7 +87,9 @@ interface AppDataContextValue {
   getUpcomingMissions: () => Mission[];
   getSectorRiskDistribution: () => Record<RiskLevel, number>;
   syncWeatherFromApi: (provider: WeatherProvider) => Promise<void>;
-  applyManualSectorCorrection: (payload: ManualWeatherPayload) => Promise<void>;
+  applyManualSectorCorrection: (
+    payload: ManualWeatherPayload,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
   createSector: (payload: CreateSectorPayload) => Promise<{ ok: true } | { ok: false; error: string }>;
   updateSectorBoundary: (
     sectorId: number,
@@ -665,7 +667,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   );
 
   const applyManualSectorCorrection = useCallback(
-    async (payload: ManualWeatherPayload) => {
+    async (
+      payload: ManualWeatherPayload,
+    ): Promise<{ ok: true } | { ok: false; error: string }> => {
       if (api.platform === 'http') {
         const result = await api.insertManualWeather(
           payload.sector_id,
@@ -674,15 +678,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           payload.precipitation,
         );
 
-        if (result.ok) {
-          await refreshSectorsFromDb();
-          setLastWeatherUpdate(formatDateTime(new Date()));
-          setWeatherOfflineTimestamp(null);
-          setManualWeatherMode(false);
-          setLastWeatherSource('Manual');
-          setWeatherSyncStatus('fresh');
+        if (!result.ok) {
+          return { ok: false, error: result.error ?? 'Не удалось сохранить погоду.' };
         }
-        return;
+
+        await refreshSectorsFromDb();
+        setLastWeatherUpdate(formatDateTime(new Date()));
+        setWeatherOfflineTimestamp(null);
+        setManualWeatherMode(false);
+        setLastWeatherSource('Manual');
+        setWeatherSyncStatus('fresh');
+        return { ok: true };
       }
 
       setSectors((prev) =>
@@ -703,6 +709,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         ),
       );
       setLastWeatherUpdate(formatDateTime(new Date()));
+      return { ok: true };
     },
     [refreshSectorsFromDb],
   );

@@ -38,18 +38,44 @@ export function PendingApprovals() {
       ) : (
         <ul className="pending-approvals__list">
           {pending.map((mission) => (
-            <li key={mission.id}>
+            <li key={mission.id} className="pending-approvals__list-item">
               <button
                 type="button"
                 className="pending-approvals__item"
                 onClick={() => setSelectedMission(mission)}
               >
                 <span className="pending-approvals__item-title">{mission.title}</span>
-                <span className="pending-approvals__item-meta">
-                  {mission.operator_name ?? 'Оператор'} · {mission.sector_name ?? 'Сектор'} ·{' '}
-                  {formatDisplayTime(mission.start_time)}
-                  {mission.creator_name ? ` · автор: ${mission.creator_name}` : ''}
-                </span>
+                <div className="pending-approvals__item-grid">
+                  <div>
+                    <span className="pending-approvals__label">Оператор</span>
+                    <span className="pending-approvals__value">
+                      {mission.operator_name ?? '—'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="pending-approvals__label">Сектор</span>
+                    <span className="pending-approvals__value">
+                      {mission.sector_name ?? '—'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="pending-approvals__label">Начало</span>
+                    <span className="pending-approvals__value">
+                      {formatDisplayTime(mission.start_time)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="pending-approvals__label">Окончание</span>
+                    <span className="pending-approvals__value">
+                      {formatDisplayTime(mission.end_time)}
+                    </span>
+                  </div>
+                </div>
+                {mission.creator_name ? (
+                  <span className="pending-approvals__item-author">
+                    Автор: {mission.creator_name}
+                  </span>
+                ) : null}
               </button>
             </li>
           ))}

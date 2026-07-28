@@ -61,7 +61,7 @@ export function MissionRegistry({ onSelectMission }: MissionRegistryProps) {
         </div>
       </div>
 
-      <div className="mission-registry__table-wrap hidden md:block overflow-x-auto">
+      <div className="mission-registry__table-wrap custom-scrollbar hidden md:block overflow-x-auto">
         <table className="mission-registry__table w-full">
           <thead>
             <tr>
@@ -135,7 +135,7 @@ export function MissionRegistry({ onSelectMission }: MissionRegistryProps) {
             return (
               <li
                 key={mission.id}
-                className="mission-registry__row rounded-xl border border-white/10 bg-white/5 p-4 flex flex-col gap-2 cursor-pointer"
+                className="mission-registry__row rounded-xl bg-[#1A2235] hover:bg-[#232D42] transition-colors p-4 flex flex-col gap-2 cursor-pointer shadow-sm"
                 onClick={() => onSelectMission(mission)}
               >
                 <div className="flex items-start justify-between gap-2">

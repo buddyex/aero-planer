@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import './Modal.css';
 
 interface ModalProps {
@@ -39,7 +40,7 @@ export function Modal({ open, onClose, title, children, wide }: ModalProps) {
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose} role="presentation">
       <div
         className={`modal ${wide ? 'modal--wide' : ''}`}
@@ -58,6 +59,7 @@ export function Modal({ open, onClose, title, children, wide }: ModalProps) {
         </header>
         <div className="modal__body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

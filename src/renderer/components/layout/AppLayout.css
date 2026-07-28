@@ -2,10 +2,15 @@
   display: flex;
   flex-direction: row;
   height: 100vh;
+  height: 100dvh;
   width: 100%;
-  background: var(--bg-gradient);
+  background: #0b0f19;
   position: relative;
   overflow: hidden;
+}
+
+[data-theme='light'] .app-layout {
+  background: #f0f4f8;
 }
 
 .app-layout::before {
@@ -50,9 +55,19 @@
   animation: fade-in 0.4s ease;
 }
 
+.app-layout__content--hud {
+  padding: 0;
+  overflow: hidden;
+  animation: none;
+}
+
 @media (max-width: 1023px) {
   .app-layout__content {
     padding: 1rem;
+  }
+
+  .app-layout__content--hud {
+    padding: 0;
   }
 }
 

@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useOutletContext } from 'react-router-dom';
 import type { OperatorRole } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { isRoleAllowed } from '../../utils/permissions';
@@ -18,6 +18,8 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   const { user, isAuthenticated } = useAuth();
+  // Forward parent Outlet context (e.g. AppLayout HUD controls) through this guard.
+  const parentContext = useOutletContext();
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
@@ -27,5 +29,5 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     return <AccessDenied />;
   }
 
-  return <Outlet />;
+  return <Outlet context={parentContext} />;
 }

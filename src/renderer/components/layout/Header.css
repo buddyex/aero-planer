@@ -75,6 +75,30 @@
   color: var(--accent-primary);
 }
 
+.header__theme-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background: var(--glass-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    border-color var(--transition-base),
+    background var(--transition-base),
+    color var(--transition-base);
+}
+
+.header__theme-btn:hover {
+  border-color: var(--glass-border-hover);
+  background: var(--accent-primary-bg);
+  color: var(--accent-primary);
+}
+
 .header__comms-btn {
   display: flex;
   align-items: center;

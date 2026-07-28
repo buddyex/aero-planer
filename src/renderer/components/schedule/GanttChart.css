@@ -4,7 +4,7 @@
 
 .gantt-chart__inner {
   --gantt-label-width: 240px;
-  --gantt-track-min-width: 600px;
+  --gantt-track-min-width: 1200px;
 }
 
 .gantt-chart__header {
@@ -18,9 +18,17 @@
 
 .gantt-chart__title {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-primary);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+@media (min-width: 640px) {
+  .gantt-chart__title {
+    font-size: 0.75rem;
+  }
 }
 
 .gantt-chart__legend {
@@ -71,6 +79,8 @@
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   min-height: 200px;
+  width: 100%;
+  padding-bottom: 1rem;
 }
 
 .gantt-chart__scroll--empty {
