@@ -127,7 +127,7 @@
 
 .mission-registry__time {
   white-space: nowrap;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.8125rem;
   color: #cbd5e1;
 }
@@ -142,7 +142,7 @@
 }
 
 .mission-status--planned {
-  background: rgba(56, 189, 248, 0.2);
+  background: rgba(46, 196, 182, 0.2);
   color: #7dd3fc;
 }
 

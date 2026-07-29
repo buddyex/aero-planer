@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link, useOutletContext } from 'react-router-dom';
-import { Battery, CheckCircle2, Clock, Moon, Plane, Sun, Wrench } from 'lucide-react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { Battery, CheckCircle2, Clock, Plane, Wrench } from 'lucide-react';
 import { useAppData } from '../../context/AppDataContext';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { canForceWeatherSync } from '../../utils/permissions';
 import {
@@ -16,7 +14,6 @@ import { cn } from '../../utils/cn';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
 import { BottomSheet, type BottomSheetSnap } from '../ui/BottomSheet';
 import { SectorMap } from '../map/SectorMap';
-import type { AppLayoutOutletContext } from '../layout/AppLayout';
 import { UpcomingMissions } from './UpcomingMissions';
 import { WeatherRiskChart } from './WeatherRiskChart';
 import { DashboardWeatherControls } from './DashboardWeatherControls';
@@ -24,49 +21,16 @@ import { PendingApprovals } from './PendingApprovals';
 import './Dashboard.css';
 
 const hudPanelClass =
-  'pointer-events-auto bg-[#0B0F19]/65 backdrop-blur-xl border border-slate-600/40 shadow-2xl rounded-2xl';
+  'pointer-events-auto bg-[color-mix(in_srgb,var(--panel-solid)_72%,transparent)] backdrop-blur-xl border border-[var(--glass-border)] shadow-2xl rounded-[var(--radius-lg)]';
 
 const hudSectionTitleClass =
-  'text-[11px] font-semibold uppercase tracking-wider text-slate-300';
+  'text-[11px] font-medium uppercase tracking-wider text-[#e2e8f0] font-mono';
 
 const hudChipLabelClass =
-  'text-[11px] font-semibold uppercase tracking-wide text-slate-300 leading-tight';
+  'text-[11px] font-medium uppercase tracking-wide text-[#cbd5e1] leading-tight font-mono';
 
 type MobileTab = 'fleet' | 'missions' | 'weather' | 'approvals';
 
-function formatDateTime(date: Date): string {
-  return date.toLocaleString('ru-RU', {
-    weekday: 'short',
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-}
-
-/** Isolated clock — avoids re-rendering the whole HUD every second. */
-function HudClock() {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <div className="hidden text-right sm:block">
-      <span className={cn(hudChipLabelClass, 'block')}>Системное время</span>
-      <time
-        className="font-mono text-xs font-semibold text-slate-200 md:text-sm"
-        dateTime={now.toISOString()}
-      >
-        {formatDateTime(now)}
-      </time>
-    </div>
-  );
-}
 
 function RadialProgress({
   value,
@@ -127,7 +91,7 @@ function RadialProgress({
         </div>
       </div>
       <span className={hudChipLabelClass}>{label}</span>
-      <span className="font-mono text-xs font-semibold text-slate-300">
+      <span className="font-mono text-xs font-semibold text-white">
         {value}/{max}
       </span>
     </div>
@@ -199,7 +163,7 @@ function StatChip({
       title={tip}
       aria-label={`${tip}: ${value}`}
     >
-      <div className="mb-1 flex items-center gap-1.5 text-slate-300">
+      <div className="mb-1 flex items-center gap-1.5 text-slate-200">
         {icon}
         <span className={hudChipLabelClass}>{label}</span>
       </div>
@@ -340,13 +304,7 @@ export function Dashboard() {
     sectors,
     missions,
   } = useAppData();
-  const { user, shiftStartTime } = useAuth();
-  const { isDark, toggleTheme } = useTheme();
-  const layoutCtx = useOutletContext<AppLayoutOutletContext | undefined>();
-  const onMenuToggle = layoutCtx?.onMenuToggle ?? (() => undefined);
-  const sidebarOpen = layoutCtx?.sidebarOpen ?? false;
-  const onOpenComms = layoutCtx?.onOpenComms ?? (() => undefined);
-  const hasUnread = layoutCtx?.hasUnread ?? false;
+  const { user } = useAuth();
   const isMobile = useMediaQuery('(max-width: 767px)');
 
   const [sheetSnap, setSheetSnap] = useState<BottomSheetSnap>('peek');
@@ -422,78 +380,16 @@ export function Dashboard() {
   ];
 
   return (
-    <div className="dashboard dashboard-hud relative h-full w-full overflow-hidden bg-[#0B0F19] text-white">
+    <div className="dashboard dashboard-hud relative h-full w-full overflow-hidden bg-[var(--bg-map)] text-[var(--text-primary)]">
       <div className="absolute inset-0 z-0">
         <SectorMap variant="hud" />
       </div>
 
       {isMobile ? (
         <div className="dashboard-hud__mobile absolute inset-0 z-10 flex flex-col pointer-events-none">
-          <header
-            className={cn(
-              hudPanelClass,
-              'dashboard-hud__mobile-chrome mx-3 mt-[max(0.75rem,env(safe-area-inset-top))] flex shrink-0 items-center gap-2 px-2 py-1.5',
-            )}
-          >
-            <button
-              type="button"
-              className="dashboard-hud__icon-btn dashboard-hud__menu-btn"
-              onClick={onMenuToggle}
-              aria-label={sidebarOpen ? 'Закрыть меню' : 'Открыть меню'}
-              aria-expanded={sidebarOpen}
-            >
-              ☰
-            </button>
-
-            <div className="min-w-0 flex-1">
-              <h1 className="sr-only">Центр управления полётами</h1>
-              <p className="truncate font-mono text-sm font-semibold text-emerald-300">
-                Готовы {dronesReadyCount}/{fleetTotal}
-              </p>
-              <p className="truncate text-[10px] uppercase tracking-wide text-slate-400">
-                ТО / ремонт {maintenanceCount}
-                {activeMissions > 0 ? ` · Активные ${activeMissions}` : ''}
-              </p>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1.5">
-              {showWeatherControls && <DashboardWeatherControls compact />}
-
-              <button
-                type="button"
-                className="dashboard-hud__icon-btn"
-                onClick={toggleTheme}
-                title={isDark ? 'Светлая тема' : 'Тёмная тема'}
-                aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
-              >
-                {isDark ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
-              </button>
-
-              <button
-                type="button"
-                className={cn('dashboard-hud__icon-btn', hasUnread && 'dashboard-hud__icon-btn--unread')}
-                onClick={onOpenComms}
-                title="Терминал связи"
-                aria-label={
-                  hasUnread
-                    ? 'Открыть терминал связи (есть непрочитанные)'
-                    : 'Открыть терминал связи'
-                }
-              >
-                ✉
-              </button>
-
-              {user && (
-                <Link to="/profile" className="dashboard-hud__user dashboard-hud__user--compact">
-                  <span className="dashboard-hud__avatar">{user.full_name.charAt(0)}</span>
-                </Link>
-              )}
-            </div>
-          </header>
-
           <div
             id="dashboard-hud-map-toolbar"
-            className="dashboard-hud__mobile-toolbar mx-3 mt-2 flex shrink-0 justify-end pointer-events-none"
+            className="dashboard-hud__mobile-toolbar mx-3 mt-[max(0.75rem,env(safe-area-inset-top))] flex shrink-0 justify-end pointer-events-none"
           />
 
           <div className="relative min-h-0 flex-1">
@@ -508,13 +404,13 @@ export function Dashboard() {
                 >
                   <span className="dashboard-hud__peek-stat">
                     <span className="dashboard-hud__peek-label">Готовы</span>
-                    <span className="dashboard-hud__peek-value text-emerald-300">
+                    <span className="dashboard-hud__peek-value text-[var(--accent-secondary)]">
                       {dronesReadyCount}/{fleetTotal}
                     </span>
                   </span>
                   <span className="dashboard-hud__peek-stat">
                     <span className="dashboard-hud__peek-label">В воздухе</span>
-                    <span className="dashboard-hud__peek-value text-sky-300">{dronesInAirCount}</span>
+                    <span className="dashboard-hud__peek-value text-[var(--accent-primary)]">{dronesInAirCount}</span>
                   </span>
                   <span className="dashboard-hud__peek-stat">
                     <span className="dashboard-hud__peek-label">Риск</span>
@@ -573,31 +469,11 @@ export function Dashboard() {
           <div
             className={cn(
               hudPanelClass,
-              'dashboard-hud__topbar mb-2 grid w-full shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 px-3 py-2.5 md:px-4',
+              'dashboard-hud__topbar mb-3 flex w-full shrink-0 flex-wrap items-center gap-3 px-3 py-2 md:px-4',
             )}
           >
-            <div className="flex min-w-0 items-center gap-3 justify-self-start">
-              <button
-                type="button"
-                className="dashboard-hud__icon-btn dashboard-hud__menu-btn"
-                onClick={onMenuToggle}
-                aria-label={sidebarOpen ? 'Закрыть меню' : 'Открыть меню'}
-                aria-expanded={sidebarOpen}
-              >
-                ☰
-              </button>
-              <div className="min-w-0">
-                <h1 className="truncate text-sm font-semibold tracking-wide text-white md:text-base">
-                  Центр управления полётами
-                </h1>
-                <p className="hidden text-[10px] uppercase tracking-widest text-slate-400 sm:block">
-                  АРМ диспетчера БПЛА
-                </p>
-              </div>
-            </div>
-
             <div
-              className="dashboard-hud__metrics hidden justify-self-center xl:flex"
+              className="dashboard-hud__metrics min-w-0 flex-1"
               role="group"
               aria-label="Оперативные KPI"
             >
@@ -624,75 +500,22 @@ export function Dashboard() {
               ))}
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-2 justify-self-end md:gap-3">
-              <HudClock />
-
-              {showWeatherControls && (
-                <div className="dashboard-hud__weather-controls">
-                  <DashboardWeatherControls />
-                </div>
-              )}
-
-              <button
-                type="button"
-                className="dashboard-hud__icon-btn"
-                onClick={toggleTheme}
-                title={isDark ? 'Светлая тема' : 'Тёмная тема'}
-                aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
-              >
-                {isDark ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
-              </button>
-
-              <button
-                type="button"
-                className={cn('dashboard-hud__icon-btn', hasUnread && 'dashboard-hud__icon-btn--unread')}
-                onClick={onOpenComms}
-                title="Терминал связи"
-                aria-label={
-                  hasUnread
-                    ? 'Открыть терминал связи (есть непрочитанные)'
-                    : 'Открыть терминал связи'
-                }
-              >
-                ✉
-              </button>
-
-              {user && (
-                <Link to="/profile" className="dashboard-hud__user">
-                  <span className="dashboard-hud__avatar">{user.full_name.charAt(0)}</span>
-                  <span className="hidden min-w-0 md:block">
-                    <span className="block truncate text-xs font-medium text-white">{user.full_name}</span>
-                    <span className="block truncate text-[10px] text-slate-400">{user.role}</span>
-                    {shiftStartTime && (
-                      <span className="block truncate text-[10px] text-slate-500">
-                        Смена с{' '}
-                        {shiftStartTime.toLocaleTimeString('ru-RU', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                    )}
-                  </span>
-                </Link>
-              )}
-            </div>
+            <div
+              id="dashboard-hud-map-toolbar"
+              className="dashboard-hud__map-tools flex shrink-0 items-center justify-end"
+            />
           </div>
 
-          <div
-            id="dashboard-hud-map-toolbar"
-            className="mb-3 flex w-full shrink-0 justify-center pointer-events-none"
-          />
-
-          <div className="pointer-events-none flex min-h-0 flex-1 flex-col gap-4 overflow-hidden md:flex-row md:items-stretch md:justify-between">
+          <div className="pointer-events-none flex min-h-0 flex-1 flex-col gap-4 overflow-hidden md:flex-row md:items-start md:justify-between">
             <aside
               className={cn(
                 hudPanelClass,
-                'dashboard-hud__side custom-scrollbar flex max-h-[40%] w-full flex-col gap-3 overflow-y-auto p-3 md:max-h-none md:h-full md:w-80 md:shrink-0',
+                'dashboard-hud__side custom-scrollbar flex max-h-[42%] w-full flex-col gap-3 overflow-y-auto p-3 md:max-h-[calc(100%-0.5rem)] md:h-auto md:w-80 md:shrink-0',
               )}
             >
               <FleetOverviewSection {...fleetProps} />
 
-              <section className="dashboard-hud__missions flex min-h-0 flex-1 flex-col overflow-hidden">
+              <section className="dashboard-hud__missions flex min-h-0 flex-1 flex-col overflow-hidden md:flex-none md:max-h-64">
                 <UpcomingMissions />
               </section>
             </aside>
@@ -702,7 +525,7 @@ export function Dashboard() {
             <aside
               className={cn(
                 hudPanelClass,
-                'dashboard-hud__side custom-scrollbar flex max-h-[40%] w-full flex-col gap-3 overflow-y-auto p-3 md:max-h-none md:h-full md:w-80 md:shrink-0',
+                'dashboard-hud__side custom-scrollbar flex max-h-[42%] w-full flex-col gap-3 overflow-y-auto p-3 md:max-h-[calc(100%-0.5rem)] md:h-auto md:w-80 md:shrink-0',
               )}
             >
               <section className="dashboard-hud__weather shrink-0 space-y-2">
@@ -711,38 +534,10 @@ export function Dashboard() {
               </section>
 
               {showManagerOverview && (
-                <section className="dashboard-hud__approvals flex min-h-0 flex-1 flex-col overflow-hidden">
+                <section className="dashboard-hud__approvals flex min-h-0 flex-col overflow-hidden md:max-h-56">
                   <PendingApprovals />
                 </section>
               )}
-
-              <div
-                className="dashboard-hud__metrics dashboard-hud__metrics--stack xl:hidden"
-                role="group"
-                aria-label="Оперативные KPI"
-              >
-                {compactKpis.slice(0, 4).map((card) => (
-                  <div
-                    key={card.key}
-                    className={cn(
-                      'dashboard-hud__metric',
-                      card.variant === 'success' && 'dashboard-hud__metric--success',
-                      card.variant === 'warning' && 'dashboard-hud__metric--warning',
-                      card.variant === 'danger' && 'dashboard-hud__metric--danger',
-                    )}
-                    title={card.label}
-                    aria-label={`${card.label}: ${card.value}`}
-                  >
-                    <span className="dashboard-hud__metric-icon" aria-hidden>
-                      {card.icon}
-                    </span>
-                    <div className="dashboard-hud__metric-body">
-                      <span className="dashboard-hud__metric-value">{card.value}</span>
-                      <span className="dashboard-hud__metric-label">{card.label}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </aside>
           </div>
         </div>

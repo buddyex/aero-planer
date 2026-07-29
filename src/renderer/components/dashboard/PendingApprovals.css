@@ -19,7 +19,7 @@
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #64748b;
+  color: #e2e8f0;
 }
 
 @media (min-width: 640px) {
@@ -29,7 +29,7 @@
 }
 
 .pending-approvals__count {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.85rem;
   color: #94a3b8;
 }
@@ -38,25 +38,14 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
-}
-
-@media (min-width: 768px) {
-  .pending-approvals__list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1280px) {
-  .pending-approvals__list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
 .pending-approvals__list-item {
   min-width: 0;
+  width: 100%;
 }
 
 .pending-approvals__item {
@@ -93,8 +82,12 @@
 
 .pending-approvals__item-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0.5rem 0.75rem;
+}
+
+.pending-approvals__cell {
+  min-width: 0;
 }
 
 .pending-approvals__label {
@@ -103,7 +96,7 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #64748b;
+  color: #cbd5e1;
   margin-bottom: 0.15rem;
 }
 
@@ -113,7 +106,14 @@
   font-weight: 500;
   color: #e2e8f0;
   line-height: 1.35;
-  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pending-approvals__value--time {
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .pending-approvals__item-author {

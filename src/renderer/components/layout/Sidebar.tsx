@@ -19,57 +19,42 @@ const navItems: { to: string; route: AppRoute; label: string; icon: string }[] =
 interface SidebarProps {
   open?: boolean;
   onClose?: () => void;
-  /** When true, sidebar is always an overlay (never permanently visible on lg+). */
-  overlay?: boolean;
 }
 
-export function Sidebar({ open = false, onClose, overlay = false }: SidebarProps) {
+export function Sidebar({ open = false, onClose }: SidebarProps) {
   const { user } = useAuth();
 
   const visibleItems = user
     ? navItems.filter((item) => ROUTE_ALLOWED_ROLES[item.route].includes(user.role))
     : [];
 
-  const className = overlay
-    ? `sidebar fixed inset-y-0 left-0 z-40 w-[var(--sidebar-width)] transform transition-transform duration-200 ${
-        open ? 'translate-x-0' : '-translate-x-full'
-      }`
-    : `sidebar fixed inset-y-0 left-0 z-40 w-[var(--sidebar-width)] transform transition-transform duration-200 lg:static lg:translate-x-0 ${
-        open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      }`;
+  const className = ['sidebar', open ? 'sidebar--open' : 'sidebar--closed'].join(' ');
 
   return (
     <aside className={className}>
-      <div className="sidebar__brand">
-        <div className="sidebar__logo">AP</div>
-        <div className="sidebar__brand-text">
-          <span className="sidebar__title">Aero-Planer</span>
-          <span className="sidebar__subtitle">Control Center</span>
-        </div>
-      </div>
-
-      <nav className="sidebar__nav">
+      <nav className="sidebar__nav" aria-label="Основная навигация">
         {visibleItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.to === '/'}
             onClick={onClose}
+            title={item.label}
             className={({ isActive }) =>
-              `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`
+              `sidebar__link${isActive ? ' sidebar__link--active' : ''}`
             }
           >
             <span className="sidebar__link-icon" aria-hidden>
               {item.icon}
             </span>
-            <span>{item.label}</span>
+            <span className="sidebar__link-label">{item.label}</span>
           </NavLink>
         ))}
       </nav>
 
       {user && (
         <div className="sidebar__footer">
-          <div className="sidebar__user-mini">
+          <div className="sidebar__user-mini" title={`${user.role}: ${user.full_name}`}>
             <span className="sidebar__user-role">{user.role}</span>
             <span className="sidebar__user-name">{user.full_name}</span>
           </div>

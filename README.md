@@ -1,87 +1,142 @@
 # Aero-Planer
 
-**АРМ диспетчера БПЛА** — прогрессивное веб-приложение (PWA) для планирования миссий, управления флотом дронов, контроля погодных рисков и оперативной связи между членами команды.
+### АРМ диспетчера БПЛА · Ops Console
 
-> **Статус:** проект предназначен для **локального запуска** на рабочей станции диспетчера. Развёртывание на VPS — опционально, см. [DEPLOY.md](DEPLOY.md).
+Полноценное **автоматизированное рабочее место** для планирования полётов беспилотников: миссии, флот, погодные риски, ТО и оперативная связь команды — в одном PWA-интерфейсе с серверной бизнес-логикой в MySQL.
 
-## Ключевые возможности
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)](https://expressjs.com/)
+[![MySQL](https://img.shields.io/badge/MySQL-8-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![PWA](https://img.shields.io/badge/PWA-ready-5A0FC8)](./public/manifest.json)
+[![Socket.io](https://img.shields.io/badge/Socket.io-realtime-010101?logo=socketdotio&logoColor=white)](https://socket.io/)
 
-- **Планирование миссий** — диаграмма Ганта, реестр миссий, согласование статусов, формирование полётных листов (PDF).
-- **Fleet management** — учёт дронов и моделей, отслеживание статусов, наработки и привязки к секторам.
-- **ТО и износ** — журнал технического обслуживания, автоблокировка аппарата при превышении налёта (логика на уровне БД).
-- **Weather API** — каскадный опрос CheckWX → NOAA → Open-Meteo, ручной ввод метеоданных, матрица рисков по секторам.
-- **Chat (Comms)** — внутренняя переписка операторов в реальном времени через Socket.io.
+> Дипломный / портфолио-проект АСОИУ: от схемы БД с триггерами до HUD-дашборда диспетчера.  
+> Локальный запуск — ниже; деплой на VPS — опционально, см. [DEPLOY.md](DEPLOY.md).
 
-## Технологический стек
+---
+
+## Зачем этот проект
+
+Диспетчеру БПЛА нужно одновременно видеть карту секторов, готовность флота, очередь согласований и погодный риск — без переключения между разрозненными таблицами и мессенджерами.
+
+**Aero-Planer** решает это как единый ops-контур:
+
+| Проблема | Решение в системе |
+|----------|-------------------|
+| Рассинхрон статусов миссии / дрона / оператора | Триггеры и CHECK в MySQL — источник истины на стороне БД |
+| Слепые зоны по погоде | Каскад Weather API + матрица рисков по секторам |
+| Перегрузка UI | HUD-дашборд поверх карты: KPI, очередь миссий, согласования |
+| Права «на глаз» | RBAC: Администратор · Руководитель · Техник · Оператор |
+| Работа без стабильной сети | PWA + кэш оболочки + офлайн-баннеры метео |
+
+---
+
+## Возможности
+
+### Ops Console (HUD)
+- Карта секторов (Leaflet) как фон рабочей смены
+- Оперативные KPI: готовность флота, в воздухе, ТО, активные миссии
+- Ближайшие вылеты и очередь согласований для руководителя
+- Адаптив: desktop-панели + mobile bottom sheet
+
+### Планирование миссий
+- Диаграмма Ганта и реестр миссий
+- Создание / редактирование маршрута на карте
+- Согласование статусов с контролем допустимых переходов
+- Формирование полётных листов (PDF)
+
+### Флот и ТО
+- Учёт дронов, моделей, привязки к секторам
+- Журнал ТО и контроль износа / налёта
+- Автоблокировка аппарата при превышении лимита (логика в БД)
+
+### Погода и риски
+- Каскад источников: **CheckWX → NOAA → Open-Meteo**
+- Ручной ввод метеоданных (по роли)
+- Матрица рисков и графики по секторам
+
+### Comms
+- Внутренний чат команды в реальном времени (Socket.io)
+- Toast-уведомления о сообщениях и сменах статусов
+
+---
+
+## Стек
 
 | Слой | Технологии |
 |------|------------|
-| Frontend | React 19, TypeScript, Vite, Tailwind CSS, Leaflet, Chart.js, PWA (Service Worker) |
-| Backend | Express 5, Socket.io, JWT |
-| БД | MySQL 8 (CHECK, FOREIGN KEY, триггеры целостности) |
+| **Frontend** | React 19, TypeScript, Vite 7, Tailwind CSS 4, Framer Motion, Leaflet, Chart.js / Recharts, PWA |
+| **Backend** | Node.js 20+, Express 5, Socket.io, JWT |
+| **БД** | MySQL 8 — CHECK, FOREIGN KEY, триггеры целостности |
+| **Деплой** | Ubuntu VPS: PM2 + Nginx (+ SSL) — [DEPLOY.md](DEPLOY.md) |
 
----
+### Архитектурные принципы
 
-## Что нужно установить
+1. **Бизнес-правила — в MySQL.** Валидация миссий, переходы статусов, расчёт риска сектора, накопление налёта и автоблокировка дрона реализованы триггерами в [`schema.sql`](schema.sql), затем дублируются сервисным слоем backend.
+2. **Клиент тонкий.** UI-настройки (тема) — в `localStorage`; данные — через REST + WebSocket, адаптер [`HttpDataApi`](src/adapters/HttpDataApi.ts).
+3. **RBAC синхронизирован.** Права на фронте ([`permissions.ts`](src/renderer/utils/permissions.ts)) и бэке ([`rbac.js`](backend/src/lib/rbac.js)) совпадают по ролям.
 
-Перед запуском на компьютере должны быть установлены и **запущены** следующие компоненты:
-
-| Компонент | Версия | Зачем нужен |
-|-----------|--------|-------------|
-| [Node.js](https://nodejs.org/) | **20 LTS** или новее | фронтенд (Vite) и backend (Express) |
-| [MySQL](https://dev.mysql.com/downloads/installer/) | **8.0+** | хранение данных, бизнес-логика в триггерах |
-| Git | любая актуальная | клонирование репозитория |
-
-**Проверка установки** (PowerShell или терминал):
-
-```powershell
-node -v    # v20.x.x или выше
-npm -v
-mysql --version   # 8.0.x (если mysql в PATH)
+```
+┌─────────────┐     REST / WS      ┌──────────────┐     SQL      ┌──────────┐
+│  React PWA  │ ◄────────────────► │  Express API │ ◄──────────► │  MySQL 8 │
+│  Ops Console│     Socket.io      │  + JWT/RBAC  │   triggers   │  schema  │
+└─────────────┘                    └──────────────┘              └──────────┘
 ```
 
-### Установка MySQL на Windows
+---
 
-1. Скачайте [MySQL Installer](https://dev.mysql.com/downloads/installer/) (вариант *MySQL Server* + *MySQL Workbench* — по желанию).
-2. При установке задайте **пароль для пользователя `root`** — запомните его, он понадобится в `backend/.env`.
-3. Убедитесь, что служба MySQL запущена:
-   - «Службы» Windows → **MySQL80** → статус «Выполняется»,  
-   - или PowerShell: `Get-Service *mysql*`
+## Демо-вход (после setup-db)
 
-Без запущенного MySQL backend выдаст ошибку `connect ECONNREFUSED 127.0.0.1:3306`.
+| Логин | PIN | Роль |
+|-------|-----|------|
+| `admin` | `1234` | Администратор |
+| `head1` | `4444` | Руководитель |
+| `tech1` | `3333` | Техник |
+| `operator1` | `1111` | Оператор |
+
+UI: http://localhost:5173 · API: http://localhost:3001/api
 
 ---
 
-## Локальный запуск (пошагово)
+## Быстрый старт
 
-### Шаг 1. Клонирование репозитория
+### Требования
+
+| Компонент | Версия |
+|-----------|--------|
+| [Node.js](https://nodejs.org/) | 20 LTS+ |
+| [MySQL](https://dev.mysql.com/downloads/installer/) | 8.0+ |
+| Git | актуальный |
+
+```powershell
+node -v
+npm -v
+mysql --version
+```
+
+Служба MySQL должна быть запущена (`MySQL80` на Windows), иначе backend не стартует (`ECONNREFUSED 127.0.0.1:3306`).
+
+### Установка и запуск
 
 ```bash
 git clone https://github.com/buddyex/aero-planer.git
 cd aero-planer
-```
 
-### Шаг 2. Установка зависимостей
-
-```bash
 npm install
+cd backend && npm install && cd ..
+
 cd backend
-npm install
+copy .env.example .env   # Linux/macOS: cp .env.example .env
+# Задайте DB_PASSWORD в backend/.env
+npm run setup-db
 cd ..
+
+npm run dev:full
 ```
 
-### Шаг 3. Настройка backend
-
-Создайте файл конфигурации из шаблона:
-
-```bash
-cd backend
-copy .env.example .env
-```
-
-На Linux/macOS: `cp .env.example .env`
-
-Откройте `backend/.env` и **обязательно** укажите пароль MySQL:
+Минимум в `backend/.env`:
 
 ```env
 DB_HOST=127.0.0.1
@@ -91,155 +146,74 @@ DB_PASSWORD=ваш_пароль_mysql
 DB_NAME=aero_planer
 ```
 
-Остальные переменные для локальной разработки можно оставить по умолчанию. Полный список — в [`backend/.env.example`](backend/.env.example).
+> **Windows:** не используйте `mysql < schema.sql` в PowerShell — применяйте `npm run setup-db`.
 
-### Шаг 4. Создание базы данных и демо-данных
-
-Из папки `backend` выполните **один раз** (при первом запуске или после сброса БД):
-
-```bash
-npm run setup-db
-```
-
-Скрипт:
-- применяет схему из [`schema.sql`](schema.sql) (таблицы + триггеры);
-- заполняет демо-данными (`seed`).
-
-> **Windows:** не используйте `mysql < schema.sql` в PowerShell — оператор `<` там не поддерживается. Используйте `npm run setup-db`.
-
-При успехе в консоли появятся сообщения об инициализации БД и сидировании.
-
-### Шаг 5. Запуск приложения
-
-Из **корня** проекта:
-
-```bash
-npm run dev:full
-```
-
-Одна команда поднимает и API, и фронтенд. Альтернатива — два терминала:
-
-```bash
-# Терминал 1 — API
-cd backend && npm run dev
-
-# Терминал 2 — UI
-npm run dev
-```
-
-### Шаг 6. Открытие в браузере
-
-| Сервис | URL |
-|--------|-----|
-| **Интерфейс (UI)** | http://localhost:5173 |
-| **API** | http://localhost:3001/api |
-
-В dev-режиме Vite проксирует запросы `/api` и WebSocket на backend — отдельно настраивать URL фронтенда не нужно.
-
-### Шаг 7. Вход в систему
-
-После `setup-db` доступны демо-учётные записи (логин / PIN):
-
-| Логин | PIN | Роль |
-|-------|-----|------|
-| `admin` | `1234` | Администратор |
-| `head1` | `4444` | Руководитель |
-| `tech1` | `3333` | Техник |
-| `operator1` | `1111` | Оператор |
-
----
-
-## Структура проекта
-
-```
-aero-planer/
-├── src/renderer/          # React UI (страницы, компоненты)
-├── backend/               # Express API + Socket.io
-│   ├── .env               # ваши секреты (не в git)
-│   ├── .env.example       # шаблон конфигурации
-│   └── scripts/           # init-db, seed, миграции
-├── public/                # PWA: manifest, service worker, иконки
-├── schema.sql             # схема MySQL + триггеры
-├── README.md              # этот файл — локальный запуск
-└── DEPLOY.md              # деплой на VPS (когда понадобится)
-```
-
----
-
-## npm-скрипты
-
-| Команда | Описание |
-|---------|----------|
-| `npm run dev` | Только фронтенд (Vite, порт 5173) |
-| `npm run dev:server` | Только backend (порт 3001) |
-| `npm run dev:full` | Фронт + backend одновременно |
-| `npm run build` | Production-сборка фронтенда |
-| `npm test` | Unit-тесты |
-| `cd backend && npm run setup-db` | Создать БД + демо-данные |
-| `cd backend && npm run migrate:wear` | Применить миграцию износа (обновление существующей БД) |
-
----
-
-## Частые проблемы
-
-### `ECONNREFUSED 127.0.0.1:3306`
-
-MySQL не запущен или слушает другой порт.
-
-- Запустите службу **MySQL80** в Windows.
-- Проверьте `DB_HOST` и `DB_PORT` в `backend/.env`.
-
-### `Не удалось подключиться к базе данных` / `Access denied`
-
-Неверный логин или пароль в `backend/.env`.
-
-- Убедитесь, что `DB_PASSWORD` совпадает с паролем `root` (или отдельного пользователя MySQL).
-- Пароль не должен быть пустым, если при установке MySQL вы его задавали.
-
-### Backend падает сразу после старта
-
-В логе `[api]` ищите строку `[MySQL]`. Backend **намеренно** не стартует без рабочего подключения к БД — сначала исправьте `.env` и выполните `npm run setup-db`.
-
-### PowerShell: `schema.sql` не применяется через `<`
-
-Используйте `cd backend && npm run setup-db` — скрипт [`init-db.js`](backend/scripts/init-db.js) читает `schema.sql` через Node.js.
-
-### Метео не обновляется с CheckWX
-
-Источник CheckWX требует API-ключ. Без ключа приложение автоматически переключается на NOAA и Open-Meteo. Для ключа добавьте в `backend/.env`:
+Опционально для CheckWX:
 
 ```env
 CHECKWX_API_KEY=ваш_ключ
 ```
 
----
-
-## Архитектурные особенности
-
-### Offline-first (PWA)
-
-Service Worker кэширует оболочку приложения (`/`, `/index.html`, `/manifest.json`), что позволяет открывать UI без сети. Настройки интерфейса (тема оформления) сохраняются в `localStorage`. При недоступности метео-API отображаются баннеры офлайн-режима с меткой времени последней синхронизации.
-
-### Бизнес-логика в триггерах БД
-
-Критическая валидация и синхронизация данных инкапсулированы в MySQL, а не во фронтенде:
-
-- проверка допустимости создания миссии (`trg_check_mission_before_insert`);
-- контроль переходов статусов миссий (`trg_validate_mission_status_transition`);
-- автоматический расчёт риска сектора по погоде (`trg_auto_calculate_sector_risk`);
-- накопление налёта и автоблокировка дрона (`trg_accumulate_flight_hours_on_complete`, `trg_auto_block_drone_on_flight_hours`);
-- синхронизация статусов дрона и оператора при смене статуса миссии.
-
-Полная схема — в файле [`schema.sql`](schema.sql).
-
-### Real-time
-
-Socket.io обеспечивает мгновенные уведомления о смене статусов миссий и доставку сообщений в модуле Comms.
+Без ключа система переключается на NOAA / Open-Meteo.
 
 ---
 
-## Деплой на сервер (опционально)
+## Структура репозитория
 
-Когда проект будет готов к выкладке на VPS, следуйте инструкции в **[DEPLOY.md](DEPLOY.md)** (nginx + PM2 + MySQL + SSL на Ubuntu).
+```
+aero-planer/
+├── src/renderer/          # React UI: dashboard HUD, schedule, fleet, weather, chat
+├── src/adapters/          # HttpDataApi — слой доступа к API
+├── backend/               # Express + Socket.io + RBAC
+│   ├── .env.example
+│   └── scripts/           # init-db, seed, миграции
+├── public/                # PWA manifest, service worker, иконки
+├── schema.sql             # таблицы + триггеры целостности
+├── README.md
+└── DEPLOY.md
+```
 
-Для повседневной работы диспетчера достаточно локального запуска по инструкции выше.
+### npm-скрипты
+
+| Команда | Описание |
+|---------|----------|
+| `npm run dev` / `dev:full` | Фронт + API |
+| `npm run build` | Production-сборка UI |
+| `npm test` | Unit-тесты |
+| `cd backend && npm run setup-db` | Схема + демо-данные |
+| `cd backend && npm run migrate:wear` | Миграция износа на существующей БД |
+
+---
+
+## Целостность данных (highlight для ревью)
+
+Критические инварианты не «доверяются» UI:
+
+| Триггер / механизм | Назначение |
+|--------------------|------------|
+| `trg_check_mission_before_insert` | Допустимость создания миссии |
+| `trg_validate_mission_status_transition` | Легальные переходы статусов |
+| `trg_auto_calculate_sector_risk` | Риск сектора по погоде |
+| `trg_accumulate_flight_hours_on_complete` | Налёт после завершения |
+| `trg_auto_block_drone_on_flight_hours` | Автоблокировка по лимиту |
+
+Полная схема — [`schema.sql`](schema.sql).
+
+---
+
+## Частые проблемы
+
+| Симптом | Что проверить |
+|---------|----------------|
+| `ECONNREFUSED 127.0.0.1:3306` | Служба MySQL, `DB_HOST` / `DB_PORT` |
+| `Access denied` | `DB_PASSWORD` в `backend/.env` |
+| Backend сразу падает | Лог `[MySQL]` — без БД API намеренно не стартует |
+| Метео «молчит» | Без CheckWX-ключа работают NOAA / Open-Meteo; смотрите офлайн-баннер |
+
+---
+
+## Лицензия и статус
+
+Учебный / портфолио-проект. Код открыт для демонстрации архитектуры АРМ и стека full-stack.
+
+**Репозиторий:** [github.com/buddyex/aero-planer](https://github.com/buddyex/aero-planer)

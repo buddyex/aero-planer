@@ -13,15 +13,25 @@
 
 .dashboard-hud__side {
   min-height: 0;
-}
-
-/* Burger always visible on HUD — sidebar is overlay-only here */
-.dashboard-hud__menu-btn {
-  display: inline-flex;
+  align-self: flex-start;
 }
 
 .dashboard-hud__topbar {
   position: relative;
+}
+
+.dashboard-hud__map-tools {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.dashboard-hud__map-tools .sector-map-card__hud-tools {
+  width: auto;
+  align-items: center;
+}
+
+.dashboard-hud__map-tools .sector-map-card__hud-toolbar {
+  max-width: min(28rem, 100%);
 }
 
 .dashboard-hud__icon-btn {
@@ -46,7 +56,7 @@
 
 .dashboard-hud__icon-btn--unread {
   position: relative;
-  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.45);
+  box-shadow: 0 0 0 1px rgba(46, 196, 182, 0.45);
 }
 
 .dashboard-hud__icon-btn--unread::after {
@@ -57,7 +67,7 @@
   width: 0.4rem;
   height: 0.4rem;
   border-radius: 999px;
-  background: #38bdf8;
+  background: var(--accent-primary);
 }
 
 .dashboard-hud__user {
@@ -91,8 +101,8 @@
 .dashboard-hud__metrics {
   display: flex;
   align-items: stretch;
-  flex: 0 1 auto;
-  max-width: min(40rem, 52vw);
+  flex: 1 1 auto;
+  max-width: none;
   min-width: 0;
   margin: 0;
   border-radius: 0.875rem;
@@ -151,7 +161,7 @@
   bottom: 22%;
   width: 2px;
   border-radius: 1px;
-  background: rgba(56, 189, 248, 0.55);
+  background: rgba(46, 196, 182, 0.55);
   opacity: 0.85;
 }
 
@@ -181,8 +191,8 @@
   font-size: 0.8rem;
   line-height: 1;
   color: #7dd3fc;
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.18);
+  background: rgba(46, 196, 182, 0.1);
+  border: 1px solid rgba(46, 196, 182, 0.18);
 }
 
 .dashboard-hud__metric--success .dashboard-hud__metric-icon {
@@ -211,7 +221,7 @@
 }
 
 .dashboard-hud__metric-value {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 1.25rem;
   font-weight: 700;
   line-height: 1;
@@ -252,7 +262,7 @@
   width: 1.75rem;
   height: 1.75rem;
   border-radius: 0.5rem;
-  background: rgba(56, 189, 248, 0.18);
+  background: rgba(46, 196, 182, 0.18);
   color: #7dd3fc;
   font-size: 0.75rem;
   font-weight: 700;
@@ -331,7 +341,7 @@
 }
 
 .dashboard-hud__peek-value {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 0.95rem;
   font-weight: 700;
   color: #f1f5f9;
@@ -373,14 +383,33 @@
 }
 
 .dashboard-hud__tab--active {
-  border-color: rgba(56, 189, 248, 0.55);
-  background: rgba(14, 165, 233, 0.16);
-  color: #e0f2fe;
+  border-color: var(--accent-primary-dim);
+  background: var(--accent-primary-bg);
+  color: var(--accent-primary);
 }
 
 .dashboard-hud__tab:focus-visible {
-  outline: 2px solid rgba(56, 189, 248, 0.7);
+  outline: 2px solid rgba(46, 196, 182, 0.7);
   outline-offset: 2px;
+}
+
+/* Readable labels on dark translucent HUD panels */
+.dashboard-hud__side .section-title,
+.dashboard-hud__missions .section-title,
+.dashboard-hud__weather .section-title {
+  color: #e2e8f0;
+}
+
+.dashboard-hud__side .section-subtitle,
+.dashboard-hud__missions .section-subtitle,
+.dashboard-hud__weather .section-subtitle {
+  color: #cbd5e1;
+}
+
+.dashboard-hud__missions .upcoming-missions__date,
+.dashboard-hud__missions .upcoming-missions__meta,
+.dashboard-hud__missions .upcoming-missions__empty {
+  color: #94a3b8;
 }
 
 /* Strip nested GlassCard chrome inside HUD panels */
@@ -435,6 +464,7 @@
 .dashboard-hud__missions .upcoming-missions__list {
   flex: 1;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
 }
 

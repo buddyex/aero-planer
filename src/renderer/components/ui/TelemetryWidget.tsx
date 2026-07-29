@@ -22,7 +22,7 @@ export interface TelemetryWidgetProps {
 
 const ACCENT = {
   emerald: { stroke: '#34d399' },
-  sky: { stroke: '#38bdf8' },
+  sky: { stroke: '#2ec4b6' },
 } as const;
 
 /** Deterministic sparkline when no data is provided. */

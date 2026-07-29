@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import './RussianDateTimePicker.css';
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -174,6 +175,9 @@ export function RussianDateTimePicker({ id, label, value, onChange, error }: Rus
     return { year: d.getFullYear(), month: d.getMonth() };
   });
   const wrapRef = useRef<HTMLDivElement>(null);
+  const dateWrapRef = useRef<HTMLDivElement>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
+  const [calendarPos, setCalendarPos] = useState<{ top: number; left: number } | null>(null);
 
   useEffect(() => {
     const next = fromIsoString(value.iso);
@@ -181,10 +185,55 @@ export function RussianDateTimePicker({ id, label, value, onChange, error }: Rus
     setTimeStr(next.timeStr);
   }, [value.iso]);
 
+  useLayoutEffect(() => {
+    if (!calendarOpen) {
+      setCalendarPos(null);
+      return;
+    }
+
+    const updatePosition = () => {
+      const anchor = dateWrapRef.current;
+      const panel = calendarRef.current;
+      if (!anchor) return;
+
+      const rect = anchor.getBoundingClientRect();
+      const panelWidth = panel?.offsetWidth || 280;
+      const panelHeight = panel?.offsetHeight || 320;
+      const gap = 6;
+      const margin = 8;
+
+      let left = rect.left;
+      let top = rect.bottom + gap;
+
+      if (left + panelWidth > window.innerWidth - margin) {
+        left = Math.max(margin, rect.right - panelWidth);
+      }
+      if (left < margin) left = margin;
+
+      if (top + panelHeight > window.innerHeight - margin) {
+        const above = rect.top - panelHeight - gap;
+        top = above >= margin ? above : Math.max(margin, window.innerHeight - panelHeight - margin);
+      }
+
+      setCalendarPos({ top, left });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [calendarOpen, viewMonth.year, viewMonth.month]);
+
   useEffect(() => {
     if (!calendarOpen) return;
     const onClick = (e: MouseEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setCalendarOpen(false);
+      const target = e.target as Node;
+      if (wrapRef.current?.contains(target)) return;
+      if (calendarRef.current?.contains(target)) return;
+      setCalendarOpen(false);
     };
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
@@ -259,7 +308,7 @@ export function RussianDateTimePicker({ id, label, value, onChange, error }: Rus
       <span className="form-field__label">{label}</span>
 
       <div className="ru-datetime__row">
-        <div className="ru-datetime__date-wrap">
+        <div className="ru-datetime__date-wrap" ref={dateWrapRef}>
           <input
             id={`${id}-date`}
             className="form-field__input ru-datetime__input"
@@ -278,81 +327,91 @@ export function RussianDateTimePicker({ id, label, value, onChange, error }: Rus
           >
             📅
           </button>
-          {calendarOpen && (
-            <div className="ru-datetime__calendar">
-              <div className="ru-datetime__cal-header">
-                <button
-                  type="button"
-                  className="ru-datetime__cal-nav"
-                  onClick={() =>
-                    setViewMonth((v) =>
-                      v.month === 0
-                        ? { year: v.year - 1, month: 11 }
-                        : { year: v.year, month: v.month - 1 },
-                    )
-                  }
-                  aria-label="Предыдущий месяц"
-                >
-                  ‹
-                </button>
-                <span className="ru-datetime__cal-title">
-                  {MONTHS[viewMonth.month]} {viewMonth.year}
-                </span>
-                <button
-                  type="button"
-                  className="ru-datetime__cal-nav"
-                  onClick={() =>
-                    setViewMonth((v) =>
-                      v.month === 11
-                        ? { year: v.year + 1, month: 0 }
-                        : { year: v.year, month: v.month + 1 },
-                    )
-                  }
-                  aria-label="Следующий месяц"
-                >
-                  ›
-                </button>
-              </div>
-              <div className="ru-datetime__cal-weekdays">
-                {WEEKDAYS.map((d) => (
-                  <span key={d}>{d}</span>
-                ))}
-              </div>
-              {weeks.map((week, wi) => (
-                <div key={wi} className="ru-datetime__cal-week">
-                  {week.map((day, di) =>
-                    day ? (
-                      <button
-                        key={di}
-                        type="button"
-                        className={`ru-datetime__cal-day ${
-                          selectedDate &&
-                          day.getDate() === selectedDate.getDate() &&
-                          day.getMonth() === selectedDate.getMonth() &&
-                          day.getFullYear() === selectedDate.getFullYear()
-                            ? 'ru-datetime__cal-day--selected'
-                            : ''
-                        }`}
-                        onClick={() => selectDay(day)}
-                      >
-                        {day.getDate()}
-                      </button>
-                    ) : (
-                      <span key={di} className="ru-datetime__cal-empty" />
-                    ),
-                  )}
+          {calendarOpen &&
+            createPortal(
+              <div
+                ref={calendarRef}
+                className="ru-datetime__calendar ru-datetime__calendar--portal"
+                style={
+                  calendarPos
+                    ? { top: calendarPos.top, left: calendarPos.left }
+                    : { top: -9999, left: -9999, visibility: 'hidden' }
+                }
+              >
+                <div className="ru-datetime__cal-header">
+                  <button
+                    type="button"
+                    className="ru-datetime__cal-nav"
+                    onClick={() =>
+                      setViewMonth((v) =>
+                        v.month === 0
+                          ? { year: v.year - 1, month: 11 }
+                          : { year: v.year, month: v.month - 1 },
+                      )
+                    }
+                    aria-label="Предыдущий месяц"
+                  >
+                    ‹
+                  </button>
+                  <span className="ru-datetime__cal-title">
+                    {MONTHS[viewMonth.month]} {viewMonth.year}
+                  </span>
+                  <button
+                    type="button"
+                    className="ru-datetime__cal-nav"
+                    onClick={() =>
+                      setViewMonth((v) =>
+                        v.month === 11
+                          ? { year: v.year + 1, month: 0 }
+                          : { year: v.year, month: v.month + 1 },
+                      )
+                    }
+                    aria-label="Следующий месяц"
+                  >
+                    ›
+                  </button>
                 </div>
-              ))}
-              <div className="ru-datetime__cal-footer">
-                <button type="button" className="ru-datetime__cal-action" onClick={handleToday}>
-                  Сегодня
-                </button>
-                <button type="button" className="ru-datetime__cal-action" onClick={handleClear}>
-                  Очистить
-                </button>
-              </div>
-            </div>
-          )}
+                <div className="ru-datetime__cal-weekdays">
+                  {WEEKDAYS.map((d) => (
+                    <span key={d}>{d}</span>
+                  ))}
+                </div>
+                {weeks.map((week, wi) => (
+                  <div key={wi} className="ru-datetime__cal-week">
+                    {week.map((day, di) =>
+                      day ? (
+                        <button
+                          key={di}
+                          type="button"
+                          className={`ru-datetime__cal-day ${
+                            selectedDate &&
+                            day.getDate() === selectedDate.getDate() &&
+                            day.getMonth() === selectedDate.getMonth() &&
+                            day.getFullYear() === selectedDate.getFullYear()
+                              ? 'ru-datetime__cal-day--selected'
+                              : ''
+                          }`}
+                          onClick={() => selectDay(day)}
+                        >
+                          {day.getDate()}
+                        </button>
+                      ) : (
+                        <span key={di} className="ru-datetime__cal-empty" />
+                      ),
+                    )}
+                  </div>
+                ))}
+                <div className="ru-datetime__cal-footer">
+                  <button type="button" className="ru-datetime__cal-action" onClick={handleToday}>
+                    Сегодня
+                  </button>
+                  <button type="button" className="ru-datetime__cal-action" onClick={handleClear}>
+                    Очистить
+                  </button>
+                </div>
+              </div>,
+              document.body,
+            )}
         </div>
 
         <input

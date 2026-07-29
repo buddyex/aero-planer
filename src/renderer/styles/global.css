@@ -1,50 +1,58 @@
-/* ── Design tokens: Dark (default) ── */
+/* ── Design tokens: Ops Console — Dark (default) ── */
 :root,
 [data-theme='dark'] {
-  --sidebar-width: 260px;
+  --sidebar-width: 56px;
+  --tape-h: 56px;
 
-  --bg-base: #0b0f19;
-  --bg-gradient: #0b0f19;
-  --bg-glow-1: rgba(56, 189, 248, 0.08);
-  --bg-glow-2: rgba(99, 102, 241, 0.06);
+  --bg-base: #070a0d;
+  --bg-map: #0c1218;
+  --bg-gradient: #070a0d;
+  --bg-glow-1: rgba(46, 196, 182, 0.1);
+  --bg-glow-2: rgba(232, 163, 23, 0.06);
 
-  --sidebar-bg: rgba(15, 23, 42, 0.75);
-  --header-bg: rgba(15, 23, 42, 0.6);
+  --sidebar-bg: rgba(12, 18, 24, 0.88);
+  --header-bg: rgba(16, 24, 32, 0.92);
+  --panel-solid: #101820;
 
-  --glass-bg: rgba(30, 41, 59, 0.45);
-  --glass-border: rgba(148, 163, 184, 0.12);
-  --glass-border-hover: rgba(56, 189, 248, 0.35);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --glass-bg: rgba(12, 18, 24, 0.72);
+  --glass-border: rgba(154, 168, 181, 0.14);
+  --glass-border-hover: rgba(46, 196, 182, 0.4);
+  --glass-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
 
-  --surface-elevated: rgba(51, 65, 85, 0.35);
-  --surface-hover: rgba(71, 85, 105, 0.35);
+  --surface-elevated: rgba(16, 24, 32, 0.9);
+  --surface-hover: rgba(30, 42, 53, 0.85);
 
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-primary: #e8eef4;
+  --text-secondary: #9aa8b5;
+  --text-muted: #5e6d7a;
 
-  --accent-primary: #38bdf8;
-  --accent-primary-dim: rgba(56, 189, 248, 0.3);
-  --accent-primary-bg: rgba(56, 189, 248, 0.1);
-  --accent-secondary: #818cf8;
-  --accent-glow: rgba(56, 189, 248, 0.25);
+  --accent-primary: #2ec4b6;
+  --accent-primary-dim: rgba(46, 196, 182, 0.3);
+  --accent-primary-bg: rgba(46, 196, 182, 0.14);
+  --accent-secondary: #3dba74;
+  --accent-glow: rgba(46, 196, 182, 0.28);
+  --accent-amber: #e8a317;
+  --accent-amber-dim: rgba(232, 163, 23, 0.16);
 
-  --risk-low: #22c55e;
-  --risk-low-dim: rgba(34, 197, 94, 0.35);
-  --risk-low-bg: rgba(34, 197, 94, 0.1);
+  --risk-low: #3dba74;
+  --risk-low-dim: rgba(61, 186, 116, 0.35);
+  --risk-low-bg: rgba(61, 186, 116, 0.12);
 
-  --risk-medium: #eab308;
-  --risk-medium-dim: rgba(234, 179, 8, 0.35);
-  --risk-medium-bg: rgba(234, 179, 8, 0.1);
+  --risk-medium: #e8a317;
+  --risk-medium-dim: rgba(232, 163, 23, 0.35);
+  --risk-medium-bg: rgba(232, 163, 23, 0.12);
 
-  --risk-high: #ef4444;
-  --risk-high-dim: rgba(239, 68, 68, 0.35);
-  --risk-high-bg: rgba(239, 68, 68, 0.1);
-  --risk-high-glow: rgba(239, 68, 68, 0.2);
+  --risk-high: #e24b4b;
+  --risk-high-dim: rgba(226, 75, 75, 0.35);
+  --risk-high-bg: rgba(226, 75, 75, 0.12);
+  --risk-high-glow: rgba(226, 75, 75, 0.22);
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --font-ui: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
   --transition-fast: 150ms ease;
   --transition-base: 250ms ease;
@@ -52,31 +60,48 @@
 
 /* ── Light theme ── */
 [data-theme='light'] {
-  --bg-base: #f0f4f8;
-  --bg-gradient: linear-gradient(145deg, #e8eef5 0%, #f1f5f9 50%, #e2e8f0 100%);
-  --bg-glow-1: rgba(59, 130, 246, 0.08);
-  --bg-glow-2: rgba(99, 102, 241, 0.06);
+  --bg-base: #e8eef3;
+  --bg-map: #d5dde6;
+  --bg-gradient: #e8eef3;
+  --bg-glow-1: rgba(15, 143, 132, 0.1);
+  --bg-glow-2: rgba(196, 132, 10, 0.06);
 
-  --sidebar-bg: rgba(255, 255, 255, 0.8);
-  --header-bg: rgba(255, 255, 255, 0.7);
+  --sidebar-bg: rgba(244, 247, 250, 0.92);
+  --header-bg: rgba(244, 247, 250, 0.95);
+  --panel-solid: #f4f7fa;
 
-  --glass-bg: rgba(255, 255, 255, 0.65);
-  --glass-border: rgba(148, 163, 184, 0.25);
-  --glass-border-hover: rgba(59, 130, 246, 0.4);
-  --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
+  --glass-bg: rgba(248, 250, 252, 0.82);
+  --glass-border: rgba(14, 22, 32, 0.1);
+  --glass-border-hover: rgba(15, 143, 132, 0.4);
+  --glass-shadow: 0 8px 28px rgba(14, 22, 32, 0.08);
 
-  --surface-elevated: rgba(241, 245, 249, 0.8);
-  --surface-hover: rgba(226, 232, 240, 0.9);
+  --surface-elevated: rgba(255, 255, 255, 0.9);
+  --surface-hover: rgba(226, 232, 240, 0.95);
 
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-primary: #0e1620;
+  --text-secondary: #3d4d5c;
+  --text-muted: #7a8a98;
 
-  --accent-primary: #2563eb;
-  --accent-primary-dim: rgba(37, 99, 235, 0.3);
-  --accent-primary-bg: rgba(37, 99, 235, 0.08);
-  --accent-secondary: #6366f1;
-  --accent-glow: rgba(37, 99, 235, 0.15);
+  --accent-primary: #0f8f84;
+  --accent-primary-dim: rgba(15, 143, 132, 0.28);
+  --accent-primary-bg: rgba(15, 143, 132, 0.1);
+  --accent-secondary: #1a8f4a;
+  --accent-glow: rgba(15, 143, 132, 0.2);
+  --accent-amber: #c4840a;
+  --accent-amber-dim: rgba(196, 132, 10, 0.14);
+
+  --risk-low: #1a8f4a;
+  --risk-low-dim: rgba(26, 143, 74, 0.3);
+  --risk-low-bg: rgba(26, 143, 74, 0.1);
+
+  --risk-medium: #c4840a;
+  --risk-medium-dim: rgba(196, 132, 10, 0.3);
+  --risk-medium-bg: rgba(196, 132, 10, 0.1);
+
+  --risk-high: #c93535;
+  --risk-high-dim: rgba(201, 53, 53, 0.3);
+  --risk-high-bg: rgba(201, 53, 53, 0.1);
+  --risk-high-glow: rgba(201, 53, 53, 0.18);
 }
 
 *,
@@ -93,7 +118,7 @@ html {
 
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-ui);
   background: var(--bg-base);
   color: var(--text-primary);
   line-height: 1.5;
@@ -118,11 +143,12 @@ select,
 
 .section-title {
   margin: 0;
-  font-size: 0.625rem;
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 @media (min-width: 640px) {
@@ -155,10 +181,9 @@ select,
   background: var(--glass-border-hover);
 }
 
-/* Slim translucent scrollbar for timelines / tables */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+  scrollbar-color: var(--glass-border) transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -167,15 +192,15 @@ select,
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.35);
+  background: transparent;
   border-radius: 999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35);
+  background: var(--glass-border);
   border-radius: 999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.55);
+  background: var(--glass-border-hover);
 }

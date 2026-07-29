@@ -95,13 +95,13 @@
 }
 
 .app-select__option--selected {
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(99, 102, 241, 0.18));
+  background: linear-gradient(135deg, rgba(46, 196, 182, 0.22), rgba(99, 102, 241, 0.18));
   color: var(--accent-primary);
   font-weight: 600;
 }
 
 .app-select__option--selected:hover {
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.28), rgba(99, 102, 241, 0.22));
+  background: linear-gradient(135deg, rgba(46, 196, 182, 0.28), rgba(99, 102, 241, 0.22));
 }
 
 .app-select__option:disabled {

@@ -23,7 +23,7 @@
   flex: 1 1 6.5rem;
   min-width: 6.5rem;
   width: auto;
-  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-family: var(--font-mono);
   color: var(--text-primary);
   -webkit-text-fill-color: var(--text-primary);
 }
@@ -31,7 +31,7 @@
 .ru-datetime__time {
   flex: 0 0 5.5rem;
   width: 5.5rem;
-  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-family: var(--font-mono);
   text-align: center;
   color: var(--text-primary);
   -webkit-text-fill-color: var(--text-primary);
@@ -64,13 +64,20 @@
   z-index: 50;
   width: 17.5rem;
   padding: 0.75rem;
-  background: var(--glass-bg);
+  background: var(--panel-solid);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--glass-border-hover);
   border-radius: var(--radius-md);
   box-shadow: var(--glass-shadow);
   animation: modal-slide-in 0.2s ease;
+}
+
+.ru-datetime__calendar--portal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1200;
 }
 
 .ru-datetime__cal-header {

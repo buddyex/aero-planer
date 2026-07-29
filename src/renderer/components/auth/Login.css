@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  background: var(--bg-gradient);
+  background: var(--bg-base);
   position: relative;
   overflow: hidden;
   animation: login-fade-in 0.6s ease;
@@ -17,60 +17,72 @@
 .login-page__glow {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
   pointer-events: none;
+  filter: blur(0);
 }
 
 .login-page__glow--1 {
-  width: 420px;
-  height: 420px;
-  background: var(--bg-glow-1);
-  top: -120px;
-  left: -80px;
+  width: 520px;
+  height: 520px;
+  top: -160px;
+  left: -120px;
+  background: radial-gradient(circle, rgba(46, 196, 182, 0.22) 0%, transparent 70%);
 }
 
 .login-page__glow--2 {
-  width: 360px;
-  height: 360px;
-  background: var(--bg-glow-2);
-  bottom: -100px;
-  right: -60px;
+  width: 440px;
+  height: 440px;
+  bottom: -140px;
+  right: -80px;
+  background: radial-gradient(circle, rgba(232, 163, 23, 0.14) 0%, transparent 70%);
+}
+
+[data-theme='light'] .login-page__glow--1 {
+  background: radial-gradient(circle, rgba(15, 143, 132, 0.18) 0%, transparent 70%);
+}
+
+[data-theme='light'] .login-page__glow--2 {
+  background: radial-gradient(circle, rgba(196, 132, 10, 0.12) 0%, transparent 70%);
 }
 
 .login-card {
   width: min(420px, 100%);
-  padding: 2.25rem 2rem;
-  border-radius: var(--radius-lg);
+  padding: 2.5rem 2.25rem;
+  border-radius: 20px;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--glass-shadow), 0 24px 48px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
   animation: login-card-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  z-index: 1;
 }
 
 .login-card__header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.75rem;
 }
 
 .login-card__logo {
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   margin: 0 auto 1rem;
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   display: grid;
   place-items: center;
+  font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 1.25rem;
-  color: var(--accent-primary);
-  background: var(--accent-primary-bg);
-  border: 1px solid var(--accent-primary-dim);
+  font-size: 1.125rem;
+  color: #070a0d;
+  background: var(--accent-primary);
+  box-shadow: 0 8px 24px var(--accent-glow);
 }
 
 .login-card__title {
   margin: 0;
   font-size: 1.5rem;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
@@ -87,7 +99,9 @@
 }
 
 .login-card__input {
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .login-card__input:focus {
@@ -101,16 +115,19 @@
   border-radius: var(--radius-sm);
   font-size: 0.875rem;
   color: #fecaca;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: var(--risk-high-bg);
+  border: 1px solid var(--risk-high-dim);
   animation: login-shake 0.35s ease;
 }
 
 .login-card__submit {
   width: 100%;
   margin-top: 0.5rem;
-  padding: 0.85rem;
-  font-size: 1rem;
+  padding: 0.9rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px var(--accent-glow);
 }
 
 .login-card__hint {
@@ -119,8 +136,10 @@
   flex-direction: column;
   gap: 0.25rem;
   text-align: center;
-  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
   color: var(--text-muted);
+  letter-spacing: 0.02em;
 }
 
 @keyframes login-fade-in {

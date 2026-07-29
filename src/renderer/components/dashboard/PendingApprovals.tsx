@@ -46,36 +46,34 @@ export function PendingApprovals() {
               >
                 <span className="pending-approvals__item-title">{mission.title}</span>
                 <div className="pending-approvals__item-grid">
-                  <div>
+                  <div className="pending-approvals__cell">
                     <span className="pending-approvals__label">Оператор</span>
                     <span className="pending-approvals__value">
                       {mission.operator_name ?? '—'}
                     </span>
                   </div>
-                  <div>
+                  <div className="pending-approvals__cell">
                     <span className="pending-approvals__label">Сектор</span>
                     <span className="pending-approvals__value">
                       {mission.sector_name ?? '—'}
                     </span>
                   </div>
-                  <div>
+                  <div className="pending-approvals__cell">
                     <span className="pending-approvals__label">Начало</span>
-                    <span className="pending-approvals__value">
+                    <span className="pending-approvals__value pending-approvals__value--time">
                       {formatDisplayTime(mission.start_time)}
                     </span>
                   </div>
-                  <div>
+                  <div className="pending-approvals__cell">
                     <span className="pending-approvals__label">Окончание</span>
-                    <span className="pending-approvals__value">
+                    <span className="pending-approvals__value pending-approvals__value--time">
                       {formatDisplayTime(mission.end_time)}
                     </span>
                   </div>
                 </div>
-                {mission.creator_name ? (
-                  <span className="pending-approvals__item-author">
-                    Автор: {mission.creator_name}
-                  </span>
-                ) : null}
+                <span className="pending-approvals__item-author">
+                  Автор: {mission.creator_name ?? '—'}
+                </span>
               </button>
             </li>
           ))}

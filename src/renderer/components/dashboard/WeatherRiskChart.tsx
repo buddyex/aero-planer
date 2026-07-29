@@ -85,7 +85,7 @@ export function WeatherRiskChart({ embedded = false }: WeatherRiskChartProps) {
               padding: 12,
               usePointStyle: true,
               pointStyle: 'circle',
-              font: { family: 'Inter', size: 11 },
+              font: { family: 'IBM Plex Sans', size: 11 },
             },
           },
           tooltip: {

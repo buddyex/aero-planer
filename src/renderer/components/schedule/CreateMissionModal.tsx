@@ -18,7 +18,6 @@ import {
   type RussianDateTimeValue,
 } from '../ui/RussianDateTimePicker';
 import { RiskAssessmentBlock } from './RiskAssessmentBlock';
-import { MissionRouteMap } from './MissionRouteMap';
 import './CreateMissionModal.css';
 
 interface CreateMissionModalProps {
@@ -58,7 +57,6 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
     windBlocked: false,
   });
   const [routeGeometry, setRouteGeometry] = useState<string | null>(null);
-  const [drawRouteEnabled, setDrawRouteEnabled] = useState(false);
 
   const selectableDrones = useMemo(() => {
     if (!isEditMode || !mission) return drones;
@@ -186,7 +184,6 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
     } else {
       setTitle('');
       setRouteGeometry(null);
-      setDrawRouteEnabled(false);
       setStart(createDefaultValue(1));
       setEnd(createDefaultValue(3));
       setFlightRadiusM(500);
@@ -522,23 +519,6 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
               setEnd(value);
             }}
             error={fieldErrors.end}
-          />
-        </div>
-
-        <div className="form-field">
-          <label className="form-field__label">
-            <input
-              type="checkbox"
-              checked={drawRouteEnabled}
-              onChange={(e) => setDrawRouteEnabled(e.target.checked)}
-            />{' '}
-            Нарисовать маршрут на карте (опционально)
-          </label>
-          <MissionRouteMap
-            sector={sectors.find((s) => s.id === sectorId)}
-            routeGeometry={routeGeometry}
-            drawEnabled={drawRouteEnabled}
-            onRouteChange={setRouteGeometry}
           />
         </div>
 

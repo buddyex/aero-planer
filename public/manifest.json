@@ -4,8 +4,8 @@
   "description": "АРМ диспетчера БПЛА",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#070a0d",
+  "theme_color": "#070a0d",
   "orientation": "any",
   "icons": [
     {

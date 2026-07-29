@@ -108,8 +108,8 @@ select.form-field__select option {
 }
 
 .btn--primary {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  color: #fff;
+  background: var(--accent-primary);
+  color: #070a0d;
   box-shadow: 0 4px 16px var(--accent-glow);
 }
 
@@ -144,8 +144,8 @@ select.form-field__select option {
   width: 100%;
   padding: 0.875rem 1.5rem;
   font-size: 0.9375rem;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  color: #fff;
+  background: var(--accent-primary);
+  color: #070a0d;
   box-shadow: 0 4px 20px var(--accent-glow);
 }
 

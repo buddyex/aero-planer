@@ -37,7 +37,7 @@ export function Login() {
         <header className="login-card__header">
           <div className="login-card__logo">AP</div>
           <h1 className="login-card__title">Aero-Planer</h1>
-          <p className="login-card__subtitle">АРМ диспетчера БПЛА — авторизация смены</p>
+          <p className="login-card__subtitle">Вход диспетчера · учётные данные смены</p>
         </header>
 
         <form className="login-card__form" onSubmit={handleSubmit}>
@@ -83,14 +83,13 @@ export function Login() {
           )}
 
           <button type="submit" className="btn btn--accent login-card__submit" disabled={isLoading}>
-            {isLoading ? 'Вход...' : 'Начать смену'}
+            {isLoading ? 'Вход...' : 'Войти в смену'}
           </button>
         </form>
 
         <footer className="login-card__hint">
-          <span>Демо: admin / 1234</span>
-          <span>operator1 / 1111</span>
-          <span>tech1 / 3333</span>
+          <span>Роли: Администратор · Руководитель · Техник · Оператор</span>
+          <span>Демо: admin / 1234 · operator1 / 1111</span>
         </footer>
       </div>
     </div>

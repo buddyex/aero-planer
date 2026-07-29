@@ -52,7 +52,7 @@
 }
 
 .weather-api-panel__meta-value {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--accent-primary);

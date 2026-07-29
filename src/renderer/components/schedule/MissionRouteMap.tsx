@@ -49,7 +49,7 @@ function RouteDrawControl({
 
     const existing = parseRouteLatLngs(routeGeometry);
     if (existing.length >= 2) {
-      const line = L.polyline(existing, { color: '#38bdf8', weight: 3 });
+      const line = L.polyline(existing, { color: '#2ec4b6', weight: 3 });
       drawnItems.addLayer(line);
     }
 
@@ -63,7 +63,7 @@ function RouteDrawControl({
         circlemarker: false,
         polyline: enabled
           ? {
-              shapeOptions: { color: '#38bdf8', weight: 3 },
+              shapeOptions: { color: '#2ec4b6', weight: 3 },
             }
           : false,
       },
@@ -162,7 +162,7 @@ export function MissionRouteMap({
           />
         ) : null}
         {routeLatLngs.length >= 2 && !drawEnabled && (
-          <Polyline positions={routeLatLngs} pathOptions={{ color: '#38bdf8', weight: 3 }} />
+          <Polyline positions={routeLatLngs} pathOptions={{ color: '#2ec4b6', weight: 3 }} />
         )}
         <RouteDrawControl
           enabled={drawEnabled}

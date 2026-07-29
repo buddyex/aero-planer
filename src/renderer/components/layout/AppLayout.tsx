@@ -36,16 +36,12 @@ function AppLayoutInner() {
 
   useEffect(() => {
     if (!sidebarOpen) return;
-    // Lock body scroll whenever overlay sidebar is open (HUD always; mobile otherwise).
-    const shouldLock =
-      isDashboardHud || window.matchMedia('(max-width: 1023px)').matches;
-    if (!shouldLock) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [sidebarOpen, isDashboardHud]);
+  }, [sidebarOpen]);
 
   useEffect(() => {
     const onFocusIn = (event: FocusEvent) => {
@@ -66,31 +62,29 @@ function AppLayoutInner() {
 
   return (
     <div className="app-layout">
-      <Sidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        overlay={isDashboardHud}
+      <Header
+        onOpenComms={() => openComms()}
+        hasUnread={hasUnread}
+        sidebarOpen={sidebarOpen}
+        onMenuToggle={() => setSidebarOpen((v) => !v)}
       />
-      {sidebarOpen && (
-        <button
-          type="button"
-          className={`app-layout__backdrop${isDashboardHud ? '' : ' lg:hidden'}`}
-          aria-label="Закрыть меню"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-      <div className="app-layout__main">
-        {!isDashboardHud && (
-          <Header
-            onOpenComms={() => openComms()}
-            hasUnread={hasUnread}
-            sidebarOpen={sidebarOpen}
-            onMenuToggle={() => setSidebarOpen((v) => !v)}
+      <div className="app-layout__body">
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        {sidebarOpen && (
+          <button
+            type="button"
+            className="app-layout__backdrop"
+            aria-label="Закрыть меню"
+            onClick={() => setSidebarOpen(false)}
           />
         )}
-        <main className={`app-layout__content${isDashboardHud ? ' app-layout__content--hud' : ''}`}>
-          <Outlet context={outletContext} />
-        </main>
+        <div className="app-layout__main">
+          <main
+            className={`app-layout__content${isDashboardHud ? ' app-layout__content--hud' : ''}`}
+          >
+            <Outlet context={outletContext} />
+          </main>
+        </div>
       </div>
     </div>
   );

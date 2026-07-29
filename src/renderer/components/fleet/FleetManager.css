@@ -156,8 +156,8 @@
 }
 
 .fleet-card__status--planned {
-  background: #38bdf8;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.45);
+  background: var(--accent-primary);
+  box-shadow: 0 0 10px rgba(46, 196, 182, 0.45);
 }
 
 .fleet-card__status--maintenance {
