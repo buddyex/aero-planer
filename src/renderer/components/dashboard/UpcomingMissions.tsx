@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import type { Mission } from '../../types';
+import { formatShortFio } from '../../utils/fio';
 import { parseMissionTime } from '../../utils/weather';
 import { MissionDetailModal } from '../schedule/MissionDetailModal';
 import { GlassCard } from '../ui/GlassCard';
@@ -72,7 +73,7 @@ export function UpcomingMissions() {
                     <span className="upcoming-missions__title">{mission.title}</span>
                     <span className="upcoming-missions__meta">
                       {drone?.serial_number} ·{' '}
-                      {operator?.full_name ?? mission.operator_name ?? '—'} ·{' '}
+                      {formatShortFio(operator?.full_name ?? mission.operator_name)} ·{' '}
                       {sector?.sector_name}
                     </span>
                   </div>

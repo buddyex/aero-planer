@@ -5,6 +5,7 @@ import { useAppData } from '../../context/AppDataContext';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { canForceWeatherSync } from '../../utils/permissions';
+import { fioAvatarLetter, formatShortFio } from '../../utils/fio';
 import { DashboardWeatherControls } from '../dashboard/DashboardWeatherControls';
 import './Header.css';
 
@@ -61,7 +62,7 @@ export function Header({
         </div>
       </div>
 
-      <div className="status-tape__seg status-tape__seg--live">
+      <div className="status-tape__seg status-tape__seg--live status-tape__seg--hide-xs">
         <span>LIVE</span>
         <strong>{activeMissionsCount}</strong>
       </div>
@@ -72,7 +73,7 @@ export function Header({
       </div>
 
       <div
-        className={`status-tape__seg${highRisk > 0 ? ' status-tape__seg--warn' : ''}`}
+        className={`status-tape__seg status-tape__seg--hide-xs${highRisk > 0 ? ' status-tape__seg--warn' : ''}`}
       >
         <span>РИСК</span>
         <strong>{highRisk > 0 ? highRisk : 'OK'}</strong>
@@ -133,10 +134,10 @@ export function Header({
 
       {user && (
         <Link to="/profile" className="status-tape__user">
-          <span className="status-tape__avatar">{user.full_name.charAt(0)}</span>
+          <span className="status-tape__avatar">{fioAvatarLetter(user.full_name)}</span>
           <span className="status-tape__user-meta">
             <span className="status-tape__user-role">{user.role}</span>
-            <span className="status-tape__user-name">{user.full_name}</span>
+            <span className="status-tape__user-name">{formatShortFio(user.full_name)}</span>
           </span>
         </Link>
       )}

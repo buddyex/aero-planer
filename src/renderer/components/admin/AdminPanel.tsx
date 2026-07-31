@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useApi } from '../../context/ApiContext';
 import type { AuthUser, OperatorRole } from '../../types';
 import { OPERATOR_ROLES } from '../../types';
+import { FULL_NAME_ERROR, formatShortFio, isValidFullName } from '../../utils/fio';
 import { GlassCard } from '../ui/GlassCard';
 import { AppSelect } from '../ui/AppSelect';
 import { Modal } from '../ui/Modal';
@@ -84,6 +85,8 @@ export function AdminPanel() {
     const errors: Record<string, string> = {};
     if (!form.full_name.trim()) {
       errors.full_name = 'Укажите ФИО оператора.';
+    } else if (!isValidFullName(form.full_name)) {
+      errors.full_name = FULL_NAME_ERROR;
     }
     if (!form.login.trim()) {
       errors.login = 'Укажите логин.';
@@ -184,7 +187,7 @@ export function AdminPanel() {
                 <tr key={op.id} className="admin-panel__row">
                   <td>
                     <Link to={`/profile/${op.id}`} className="operator-link">
-                      {op.full_name}
+                      {formatShortFio(op.full_name)}
                     </Link>
                   </td>
                   <td>@{op.login}</td>
@@ -246,8 +249,10 @@ export function AdminPanel() {
                 clearFieldError('full_name');
                 setForm((f) => ({ ...f, full_name: e.target.value }));
               }}
+              placeholder="Иванов Иван Сергеевич"
               required
             />
+            <p className="form-field__hint">Полностью: Фамилия Имя Отчество</p>
             {fieldErrors.full_name && <p className="form-field__error">{fieldErrors.full_name}</p>}
           </div>
 

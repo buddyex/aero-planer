@@ -10,14 +10,25 @@ export function blurLeafletMaps() {
     el.tabIndex = -1;
   });
 
+  document.querySelectorAll<HTMLElement>('.maplibregl-canvas, .maplibregl-map').forEach((el) => {
+    el.blur();
+    el.tabIndex = -1;
+  });
+
   const active = document.activeElement;
-  if (active instanceof HTMLElement && active.closest('.leaflet-container')) {
+  if (
+    active instanceof HTMLElement &&
+    (active.closest('.leaflet-container') || active.closest('.maplibregl-map'))
+  ) {
     active.blur();
   }
 }
 
 export function setSectorMapKeyboardEnabled(enabled: boolean) {
   document.querySelectorAll<HTMLElement>('.sector-map-card .leaflet-container').forEach((el) => {
+    el.tabIndex = enabled ? 0 : -1;
+  });
+  document.querySelectorAll<HTMLElement>('.sector-map-card .maplibregl-canvas').forEach((el) => {
     el.tabIndex = enabled ? 0 : -1;
   });
 }
@@ -32,9 +43,11 @@ export function purgeOrphanPortalModals() {
   }
 }
 
-/** Удаляет «зависшие» popup/tooltip Leaflet после unmount слоя или confirm(). */
+/** Удаляет «зависшие» popup/tooltip Leaflet / MapLibre после unmount слоя или confirm(). */
 export function dismissLeafletPopups() {
-  document.querySelectorAll('.leaflet-popup, .leaflet-tooltip').forEach((node) => node.remove());
+  document
+    .querySelectorAll('.leaflet-popup, .leaflet-tooltip, .maplibregl-popup')
+    .forEach((node) => node.remove());
 }
 
 function hasOpenModalLayer(): boolean {

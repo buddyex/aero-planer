@@ -11,6 +11,7 @@ import type { DroneRow } from '../../../shared/types/api.types';
 
 import { canCompleteMaintenance } from '../../utils/permissions';
 import { mapDroneRow } from '../../utils/drones';
+import { formatShortFio } from '../../utils/fio';
 
 import { GlassCard } from '../ui/GlassCard';
 
@@ -428,10 +429,10 @@ export function MaintenanceJournal() {
                       Техник:{' '}
                       {log.operator_id ? (
                         <OperatorLink operatorId={log.operator_id} className="operator-link">
-                          {log.operator_name ?? '—'}
+                          {formatShortFio(log.operator_name)}
                         </OperatorLink>
                       ) : (
-                        log.operator_name ?? '—'
+                        formatShortFio(log.operator_name)
                       )}
                     </p>
 

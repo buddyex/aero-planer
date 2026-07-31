@@ -8,6 +8,7 @@ import './styles/global.css';
 import './styles/forms.css';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
+import 'maplibre-gl/dist/maplibre-gl.css';
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {

@@ -72,6 +72,12 @@ async function assertMissionResourcesAvailable(droneId, batteryId) {
   );
   if (!drone) return { ok: false, error: 'Борт БПЛА не найден.' };
 
+  if (drone.status === 'Списан') {
+    return {
+      ok: false,
+      error: `Борт ${drone.serial_number} списан и недоступен для назначения на миссии.`,
+    };
+  }
   if (['На ТО', 'Ремонт'].includes(drone.status)) {
     return { ok: false, error: DRONE_MAINTENANCE_ERROR };
   }

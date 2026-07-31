@@ -26,8 +26,8 @@
 .system-error-log__error {
   padding: 0.65rem;
   border-radius: var(--radius-sm);
-  color: #fecaca;
-  background: rgba(239, 68, 68, 0.12);
+  color: var(--risk-high);
+  background: var(--risk-high-bg);
 }
 
 .system-error-log__kpi-row {
@@ -180,18 +180,18 @@
 }
 
 .system-error-log__entry-badge--critical {
-  background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
+  background: var(--risk-high-bg);
+  color: var(--risk-high);
 }
 
 .system-error-log__entry-badge--error {
-  background: rgba(249, 115, 22, 0.2);
-  color: #fdba74;
+  background: var(--risk-medium-bg);
+  color: var(--risk-medium);
 }
 
 .system-error-log__entry-badge--warning {
-  background: rgba(234, 179, 8, 0.2);
-  color: #fde047;
+  background: var(--accent-amber-dim);
+  color: var(--accent-amber);
 }
 
 .system-error-log__entry-message {
@@ -229,11 +229,11 @@
   margin: 0.5rem 0 0;
   padding: 0.75rem;
   border-radius: var(--radius-sm);
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--surface-elevated);
   font-family: ui-monospace, monospace;
   font-size: 0.75rem;
   line-height: 1.45;
-  color: #cbd5e1;
+  color: var(--text-secondary);
   white-space: pre-wrap;
   word-break: break-word;
   max-height: 200px;

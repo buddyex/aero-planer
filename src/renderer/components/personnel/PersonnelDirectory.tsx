@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../context/ApiContext';
 import { useComms } from '../../context/CommsContext';
 import type { ChatContactRow } from '../../../shared/types/api.types';
+import { fioAvatarLetter, formatShortFio } from '../../utils/fio';
 import { GlassCard } from '../ui/GlassCard';
 import './PersonnelDirectory.css';
 
@@ -61,9 +62,9 @@ export function PersonnelDirectory() {
           {contacts.map((contact) => (
             <GlassCard key={contact.id} className="personnel__card">
               <div className="personnel__card-top">
-                <span className="personnel__avatar">{contact.full_name.charAt(0)}</span>
+                <span className="personnel__avatar">{fioAvatarLetter(contact.full_name)}</span>
                 <div className="personnel__info">
-                  <p className="personnel__name">{contact.full_name}</p>
+                  <p className="personnel__name">{formatShortFio(contact.full_name)}</p>
                   <p className="personnel__role">{contact.role}</p>
                   {contact.role === 'Оператор' && (
                     <span

@@ -19,7 +19,7 @@
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #e2e8f0;
+  color: var(--text-primary);
 }
 
 @media (min-width: 640px) {
@@ -31,7 +31,7 @@
 .pending-approvals__count {
   font-family: var(--font-mono);
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .pending-approvals__list {
@@ -56,27 +56,27 @@
   width: 100%;
   max-width: 100%;
   text-align: left;
-  border: 1px solid rgba(51, 65, 85, 0.5);
+  border: 1px solid var(--glass-border);
   border-radius: 0.75rem;
-  background: #1a2235;
+  background: var(--surface-elevated);
   padding: 0.875rem 1rem;
   cursor: pointer;
-  color: #e2e8f0;
+  color: var(--text-primary);
   transition:
     border-color 0.15s ease,
     background 0.15s ease;
 }
 
 .pending-approvals__item:hover {
-  border-color: rgba(96, 165, 250, 0.45);
-  background: #232d42;
+  border-color: var(--accent-primary-dim);
+  background: var(--surface-hover);
 }
 
 .pending-approvals__item-title {
   display: block;
   font-weight: 600;
   font-size: 0.95rem;
-  color: #f1f5f9;
+  color: var(--text-primary);
   line-height: 1.3;
 }
 
@@ -96,7 +96,7 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #cbd5e1;
+  color: var(--text-secondary);
   margin-bottom: 0.15rem;
 }
 
@@ -104,7 +104,7 @@
   display: block;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #e2e8f0;
+  color: var(--text-primary);
   line-height: 1.35;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -119,11 +119,11 @@
 .pending-approvals__item-author {
   display: block;
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .pending-approvals__empty {
   margin: 0;
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: var(--text-muted);
 }

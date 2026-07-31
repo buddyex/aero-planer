@@ -86,11 +86,6 @@ export function Login() {
             {isLoading ? 'Вход...' : 'Войти в смену'}
           </button>
         </form>
-
-        <footer className="login-card__hint">
-          <span>Роли: Администратор · Руководитель · Техник · Оператор</span>
-          <span>Демо: admin / 1234 · operator1 / 1111</span>
-        </footer>
       </div>
     </div>
   );

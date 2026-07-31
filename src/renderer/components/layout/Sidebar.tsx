@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { formatShortFio } from '../../utils/fio';
 import type { AppRoute } from '../../utils/permissions';
 import { ROUTE_ALLOWED_ROLES } from '../../utils/permissions';
 import './Sidebar.css';
@@ -54,9 +55,9 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
 
       {user && (
         <div className="sidebar__footer">
-          <div className="sidebar__user-mini" title={`${user.role}: ${user.full_name}`}>
+          <div className="sidebar__user-mini" title={`${user.role}: ${formatShortFio(user.full_name)}`}>
             <span className="sidebar__user-role">{user.role}</span>
-            <span className="sidebar__user-name">{user.full_name}</span>
+            <span className="sidebar__user-name">{formatShortFio(user.full_name)}</span>
           </div>
         </div>
       )}

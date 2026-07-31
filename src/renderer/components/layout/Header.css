@@ -10,6 +10,7 @@
   letter-spacing: 0.04em;
   z-index: 20;
   flex-shrink: 0;
+  overflow: hidden;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
 }
@@ -49,6 +50,7 @@
   justify-content: center;
   gap: 1px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .status-tape__mark {
@@ -272,22 +274,62 @@
   .status-tape__seg--hide-md {
     display: none;
   }
+
+  .status-tape__tagline {
+    display: none;
+  }
+
+  .status-tape__seg {
+    padding: 0 10px;
+    gap: 6px;
+  }
 }
 
 @media (max-width: 640px) {
-  .status-tape__seg--hide-sm {
+  .status-tape__seg--hide-sm,
+  .status-tape__seg--hide-xs {
     display: none;
+  }
+
+  .status-tape__brand {
+    flex-shrink: 1;
+    min-width: 0;
+    padding: 0 8px;
+    gap: 8px;
   }
 
   .status-tape__name {
     font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .status-tape__tagline {
-    font-size: 9px;
+    display: none;
+  }
+
+  .status-tape__sys-time {
+    flex-shrink: 0;
+    padding: 0 10px;
   }
 
   .status-tape__sys-time-label {
     display: none;
+  }
+
+  .status-tape__menu,
+  .status-tape__weather,
+  .status-tape__btn,
+  .status-tape__user {
+    flex-shrink: 0;
+  }
+
+  .status-tape__user {
+    padding: 0 10px;
+  }
+
+  .status-tape__btn {
+    min-width: 44px;
+    padding: 0 10px;
   }
 }

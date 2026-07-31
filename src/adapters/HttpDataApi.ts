@@ -388,6 +388,35 @@ export class HttpDataApi {
     return this.wrap(this.client.delete(`/drones/${id}`));
   }
 
+  writeOffDrone(id: number, reason?: string) {
+    return this.wrap(this.client.post(`/drones/${id}/write-off`, { reason: reason ?? null }));
+  }
+
+  restoreDrone(id: number) {
+    return this.wrap(this.client.post(`/drones/${id}/restore`));
+  }
+
+  uploadDronePhoto(id: number, file: File) {
+    const formData = new FormData();
+    formData.append('photo', file);
+    return this.wrap(
+      this.client.post(`/drones/${id}/photo`, formData, {
+        transformRequest: [
+          (data, headers) => {
+            if (headers && data instanceof FormData) {
+              delete headers['Content-Type'];
+            }
+            return data;
+          },
+        ],
+      }),
+    );
+  }
+
+  deleteDronePhoto(id: number) {
+    return this.wrap(this.client.delete(`/drones/${id}/photo`));
+  }
+
   async saveFlightSheetPdf(_defaultFilename: string, _pdfDataBase64: string) {
     return { ok: false as const, error: 'Используйте downloadFlightSheetPdf(missionId).' };
   }

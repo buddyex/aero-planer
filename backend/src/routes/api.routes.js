@@ -1,5 +1,6 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const multer = require('multer');
 const config = require('../config');
 const authService = require('../services/auth.service');
 const missionService = require('../services/mission.service');
@@ -13,6 +14,18 @@ const dashboardService = require('../services/dashboard.service');
 const systemService = require('../services/system.service');
 const pdfService = require('../services/pdf.service');
 const { requireAuth } = require('../middleware/auth');
+
+const dronePhotoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (droneService.ALLOWED_MIME.has(file.mimetype)) {
+      cb(null, true);
+      return;
+    }
+    cb(new Error('Допустимы только JPEG, PNG или WebP.'));
+  },
+});
 
 function createApiRouter() {
   const router = express.Router();
@@ -209,6 +222,47 @@ function createApiRouter() {
 
   router.delete('/drones/:id', requireAuth, async (req, res) => {
     res.json(await droneService.deleteDrone(req.operatorId, req.user.role, req.params.id));
+  });
+
+  router.post('/drones/:id/write-off', requireAuth, async (req, res) => {
+    const result = await droneService.writeOffDrone(
+      req.operatorId,
+      req.user.role,
+      req.params.id,
+      req.body?.reason,
+    );
+    res.status(result.ok ? 200 : 400).json(result);
+  });
+
+  router.post('/drones/:id/restore', requireAuth, async (req, res) => {
+    const result = await droneService.restoreDrone(req.operatorId, req.user.role, req.params.id);
+    res.status(result.ok ? 200 : 400).json(result);
+  });
+
+  router.post('/drones/:id/photo', requireAuth, (req, res, next) => {
+    dronePhotoUpload.single('photo')(req, res, (err) => {
+      if (err) {
+        const message =
+          err.code === 'LIMIT_FILE_SIZE'
+            ? 'Размер фото не должен превышать 5 МБ.'
+            : err.message || 'Ошибка загрузки файла.';
+        return res.status(400).json({ ok: false, error: message });
+      }
+      return next();
+    });
+  }, async (req, res) => {
+    const result = await droneService.uploadDronePhoto(
+      req.operatorId,
+      req.user.role,
+      req.params.id,
+      req.file,
+    );
+    res.status(result.ok ? 200 : 400).json(result);
+  });
+
+  router.delete('/drones/:id/photo', requireAuth, async (req, res) => {
+    const result = await droneService.deleteDronePhoto(req.operatorId, req.user.role, req.params.id);
+    res.status(result.ok ? 200 : 400).json(result);
   });
 
   // Sectors & weather

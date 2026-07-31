@@ -24,10 +24,10 @@ const hudPanelClass =
   'pointer-events-auto bg-[color-mix(in_srgb,var(--panel-solid)_72%,transparent)] backdrop-blur-xl border border-[var(--glass-border)] shadow-2xl rounded-[var(--radius-lg)]';
 
 const hudSectionTitleClass =
-  'text-[11px] font-medium uppercase tracking-wider text-[#e2e8f0] font-mono';
+  'text-[11px] font-medium uppercase tracking-wider text-[var(--text-primary)] font-mono';
 
 const hudChipLabelClass =
-  'text-[11px] font-medium uppercase tracking-wide text-[#cbd5e1] leading-tight font-mono';
+  'text-[11px] font-medium uppercase tracking-wide text-[var(--text-secondary)] leading-tight font-mono';
 
 type MobileTab = 'fleet' | 'missions' | 'weather' | 'approvals';
 
@@ -70,7 +70,7 @@ function RadialProgress({
             fill="none"
             stroke="currentColor"
             strokeWidth="7"
-            className="text-white/10"
+            className="text-[var(--glass-border)]"
           />
           <circle
             cx={view / 2}
@@ -85,13 +85,13 @@ function RadialProgress({
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={cn('font-mono font-bold text-white', size === 'sm' ? 'text-sm' : 'text-lg')}>
+          <span className={cn('font-mono font-bold text-[var(--text-primary)]', size === 'sm' ? 'text-sm' : 'text-lg')}>
             {pct}%
           </span>
         </div>
       </div>
       <span className={hudChipLabelClass}>{label}</span>
-      <span className="font-mono text-xs font-semibold text-white">
+      <span className="font-mono text-xs font-semibold text-[var(--text-primary)]">
         {value}/{max}
       </span>
     </div>
@@ -126,13 +126,13 @@ function FleetStatusBar({
               <span className="relative inline-flex h-2 w-2 rounded-full bg-sky-500" />
             </span>
           ) : (
-            <span className="inline-flex h-2 w-2 rounded-full bg-white/25" />
+            <span className="inline-flex h-2 w-2 rounded-full bg-[var(--text-muted)]" />
           )}
           <span className={hudChipLabelClass}>{label}</span>
         </div>
-        <span className="font-mono text-sm font-bold text-white">{value}</span>
+        <span className="font-mono text-sm font-bold text-[var(--text-primary)]">{value}</span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--glass-border)]">
         <div
           className={cn('h-full rounded-full transition-all duration-500', barClass)}
           style={{ width: `${pct}%` }}
@@ -159,15 +159,15 @@ function StatChip({
 
   return (
     <div
-      className="rounded-xl border border-slate-700/40 bg-white/[0.03] px-2.5 py-2"
+      className="rounded-xl border border-[var(--glass-border)] bg-[var(--surface-hover)] px-2.5 py-2"
       title={tip}
       aria-label={`${tip}: ${value}`}
     >
-      <div className="mb-1 flex items-center gap-1.5 text-slate-200">
+      <div className="mb-1 flex items-center gap-1.5 text-[var(--text-secondary)]">
         {icon}
         <span className={hudChipLabelClass}>{label}</span>
       </div>
-      <p className="font-mono text-lg font-bold leading-none text-white">
+      <p className="font-mono text-lg font-bold leading-none text-[var(--text-primary)]">
         <AnimatedNumber value={value} decimals={decimals} />
       </p>
     </div>
@@ -414,7 +414,16 @@ export function Dashboard() {
                   </span>
                   <span className="dashboard-hud__peek-stat">
                     <span className="dashboard-hud__peek-label">Риск</span>
-                    <span className="dashboard-hud__peek-value">{sectors.length} сек.</span>
+                    <span
+                      className={cn(
+                        'dashboard-hud__peek-value',
+                        operationalOverview.high_risk_sectors > 0 && 'text-[var(--accent-amber)]',
+                      )}
+                    >
+                      {operationalOverview.high_risk_sectors > 0
+                        ? operationalOverview.high_risk_sectors
+                        : 'OK'}
+                    </span>
                   </span>
                 </button>
               }

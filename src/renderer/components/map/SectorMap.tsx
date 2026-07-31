@@ -1,18 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Circle, MapContainer, Polygon, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { useAppData } from '../../context/AppDataContext';
 import { useAuth } from '../../context/AuthContext';
-import type { CreateSectorPayload, RiskLevel, Sector } from '../../types';
+import type { CreateSectorPayload, Sector } from '../../types';
 import { canEditSectorBoundaries } from '../../utils/permissions';
-import { formatMetric } from '../../utils/weather';
-import {
-  kmToMeters,
-  parseSectorPolygon,
-  RISK_COLORS,
-  UDMURT_MAP_CENTER,
-  UDMURT_MAP_ZOOM,
-} from '../../utils/map';
+import { sectorsToGeoJSON } from '../../utils/map';
 import { GlassCard } from '../ui/GlassCard';
 import {
   blurLeafletMaps,
@@ -23,140 +15,12 @@ import {
 } from '../../utils/mapFocus';
 import { CreateSectorModal } from './CreateSectorModal';
 import { EditSectorBoundaryModal } from './EditSectorBoundaryModal';
-import { OfflineTileLayer } from './OfflineTileLayer';
-import { MapFlyTo, MapLocationSearch, type MapSearchTarget } from './MapLocationSearch';
+import { MapLocationSearch, type MapSearchTarget } from './MapLocationSearch';
+import { MapLibreViewport } from './MapLibreViewport';
 import './SectorMap.css';
-
-function MapClickHandler({
-  enabled,
-  onPick,
-}: {
-  enabled: boolean;
-  onPick: (lat: number, lon: number) => void;
-}) {
-  useMapEvents({
-    click(event) {
-      if (!enabled) return;
-      onPick(event.latlng.lat, event.latlng.lng);
-    },
-  });
-  return null;
-}
-
-function MapResizeHandler() {
-  const map = useMap();
-
-  useEffect(() => {
-    const invalidate = () => {
-      map.invalidateSize();
-    };
-    invalidate();
-    // Second pass after layout settles (HUD panels / flex)
-    const raf = window.requestAnimationFrame(() => invalidate());
-    window.addEventListener('resize', invalidate);
-
-    const container = map.getContainer();
-    const parent = container.parentElement;
-    let observer: ResizeObserver | null = null;
-    if (parent && typeof ResizeObserver !== 'undefined') {
-      observer = new ResizeObserver(() => invalidate());
-      observer.observe(parent);
-    }
-
-    return () => {
-      window.cancelAnimationFrame(raf);
-      window.removeEventListener('resize', invalidate);
-      observer?.disconnect();
-    };
-  }, [map]);
-
-  return null;
-}
 
 function sectorHasCoords(sector: Sector): sector is Sector & { center_lat: number; center_lon: number } {
   return sector.center_lat != null && sector.center_lon != null;
-}
-
-function SectorLayer({
-  sector,
-  canEdit,
-  onEdit,
-  onDelete,
-  onExportKml,
-}: {
-  sector: Sector & { center_lat: number; center_lon: number };
-  canEdit: boolean;
-  onEdit: (sector: Sector) => void;
-  onDelete: (sectorId: number, sectorName: string) => void;
-  onExportKml: (sectorId: number) => void;
-}) {
-  const ring = parseSectorPolygon(sector);
-  const pathOptions = {
-    color: RISK_COLORS[sector.risk_level as RiskLevel],
-    fillColor: RISK_COLORS[sector.risk_level as RiskLevel],
-    fillOpacity: 0.22,
-    weight: 2,
-  };
-
-  const popup = (
-    <Popup>
-      <div className="sector-map-popup">
-        <strong>{sector.sector_name}</strong>
-        <span>Риск: {sector.risk_level}</span>
-        <span>Форма: {sector.shape_type === 'polygon' || ring ? 'полигон' : 'круг'}</span>
-        {sector.wind_speed != null && (
-          <span>
-            Ветер {formatMetric(sector.wind_speed)} м/с · {formatMetric(sector.temperature)}°C
-          </span>
-        )}
-        {canEdit && (
-          <div className="sector-map-popup__actions">
-            <button
-              type="button"
-              className="sector-map-popup__export"
-              aria-label={`Экспорт KML: ${sector.sector_name}`}
-              title="Экспорт KML"
-              onClick={() => onExportKml(sector.id)}
-            >
-              ↓ KML
-            </button>
-            <button type="button" className="sector-map-popup__edit" onClick={() => onEdit(sector)}>
-              Редактировать границы
-            </button>
-            <button
-              type="button"
-              className="sector-map-popup__delete"
-              onClick={() => {
-                dismissLeafletPopups();
-                blurLeafletMaps();
-                onDelete(sector.id, sector.sector_name);
-              }}
-            >
-              Удалить
-            </button>
-          </div>
-        )}
-      </div>
-    </Popup>
-  );
-
-  if (ring && ring.length >= 3) {
-    return (
-      <Polygon positions={ring} pathOptions={pathOptions}>
-        {popup}
-      </Polygon>
-    );
-  }
-
-  return (
-    <Circle
-      center={[sector.center_lat, sector.center_lon]}
-      radius={kmToMeters(sector.radius_km ?? 20)}
-      pathOptions={pathOptions}
-    >
-      {popup}
-    </Circle>
-  );
 }
 
 export interface SectorMapProps {
@@ -189,6 +53,7 @@ export function SectorMap({ variant = 'card' }: SectorMapProps) {
   const [flyTarget, setFlyTarget] = useState<MapSearchTarget | null>(null);
   const [kmlBusy, setKmlBusy] = useState(false);
   const [hudToolsOpen, setHudToolsOpen] = useState(false);
+  const [view3d, setView3d] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -217,6 +82,7 @@ export function SectorMap({ variant = 'card' }: SectorMapProps) {
   }, [isHud]);
 
   const mappedSectors = useMemo(() => sectors.filter(sectorHasCoords), [sectors]);
+  const sectorsGeoJson = useMemo(() => sectorsToGeoJSON(mappedSectors), [mappedSectors]);
   const sectorIdsKey = useMemo(() => mappedSectors.map((sector) => sector.id).join(','), [mappedSectors]);
 
   const mapBlocked = modalOpen || editSector != null;
@@ -265,6 +131,7 @@ export function SectorMap({ variant = 'card' }: SectorMapProps) {
 
   const handleDelete = async (sectorId: number, sectorName: string) => {
     prepareForNativeDialog();
+    dismissLeafletPopups();
 
     if (!window.confirm(`Вы уверены, что хотите удалить сектор «${sectorName}»?`)) {
       restorePageInput();
@@ -283,6 +150,11 @@ export function SectorMap({ variant = 'card' }: SectorMapProps) {
     }
 
     restorePageInput();
+  };
+
+  const handleEditFromPopup = (sectorId: number) => {
+    const sector = mappedSectors.find((s) => s.id === sectorId) ?? null;
+    setEditSector(sector);
   };
 
   const handleExportSectorKml = async (sectorId: number) => {
@@ -311,55 +183,62 @@ export function SectorMap({ variant = 'card' }: SectorMapProps) {
     }
   };
 
-  const editActions = canEdit ? (
+  const viewToggle = (
+    <button
+      type="button"
+      className={`btn btn--ghost sector-map-card__btn sector-map-card__btn--view${view3d ? ' sector-map-card__btn--active' : ''}`}
+      onClick={() => setView3d((v) => !v)}
+      title={view3d ? 'Переключить в 2D' : 'Переключить в 3D'}
+      aria-pressed={view3d}
+    >
+      {view3d ? '3D' : '2D'}
+    </button>
+  );
+
+  const editActions = (
     <div className="sector-map-card__actions">
-      <button
-        type="button"
-        className={`btn btn--ghost sector-map-card__btn${pickMode ? ' sector-map-card__btn--active' : ''}`}
-        onClick={() => setPickMode((prev) => !prev)}
-      >
-        {pickMode ? 'Кликните на карту…' : '+ На карте'}
-      </button>
-      <button
-        type="button"
-        className="btn btn--ghost sector-map-card__btn"
-        onClick={handleImportKml}
-        disabled={kmlBusy}
-      >
-        Импорт KML
-      </button>
+      {viewToggle}
+      {canEdit ? (
+        <>
+          <button
+            type="button"
+            className={`btn btn--ghost sector-map-card__btn${pickMode ? ' sector-map-card__btn--active' : ''}`}
+            onClick={() => setPickMode((prev) => !prev)}
+          >
+            {pickMode ? 'Кликните на карту…' : '+ На карте'}
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost sector-map-card__btn"
+            onClick={handleImportKml}
+            disabled={kmlBusy}
+          >
+            Импорт KML
+          </button>
+        </>
+      ) : null}
     </div>
-  ) : null;
+  );
 
   const mapCanvas = (
     <div
       className={`sector-map-card__map${pickMode ? ' sector-map-card__map--pick' : ''}${mapBlocked ? ' sector-map-card__map--blocked' : ''}`}
     >
       {mounted ? (
-        <MapContainer
-          center={UDMURT_MAP_CENTER}
-          zoom={UDMURT_MAP_ZOOM}
-          zoomControl={false}
-          scrollWheelZoom={!mapBlocked}
-          keyboard={!mapBlocked}
-          attributionControl={false}
-          className="sector-map"
-        >
-          <OfflineTileLayer />
-          <MapResizeHandler />
-          <MapFlyTo target={flyTarget} />
-          <MapClickHandler enabled={pickMode} onPick={handleMapPick} />
-          {mappedSectors.map((sector) => (
-            <SectorLayer
-              key={sector.id}
-              sector={sector}
-              canEdit={canEdit}
-              onEdit={setEditSector}
-              onDelete={handleDelete}
-              onExportKml={handleExportSectorKml}
-            />
-          ))}
-        </MapContainer>
+        <MapLibreViewport
+          sectorsGeoJson={sectorsGeoJson}
+          pickMode={pickMode}
+          mapBlocked={mapBlocked}
+          flyTarget={flyTarget}
+          view3d={view3d}
+          onPick={handleMapPick}
+          popupActions={{
+            canEdit,
+            onEdit: handleEditFromPopup,
+            onDelete: handleDelete,
+            onExportKml: handleExportSectorKml,
+          }}
+        />
       ) : (
         <div className="sector-map-card__placeholder">Загрузка карты…</div>
       )}

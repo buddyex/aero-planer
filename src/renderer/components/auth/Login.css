@@ -114,7 +114,7 @@
   padding: 0.65rem 0.85rem;
   border-radius: var(--radius-sm);
   font-size: 0.875rem;
-  color: #fecaca;
+  color: var(--risk-high);
   background: var(--risk-high-bg);
   border: 1px solid var(--risk-high-dim);
   animation: login-shake 0.35s ease;
@@ -128,18 +128,6 @@
   font-weight: 600;
   border-radius: 12px;
   box-shadow: 0 8px 20px var(--accent-glow);
-}
-
-.login-card__hint {
-  margin-top: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
 }
 
 @keyframes login-fade-in {

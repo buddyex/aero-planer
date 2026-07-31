@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import type { Mission, MissionStatus } from '../../types';
+import { formatShortFio } from '../../utils/fio';
 import { missionStatusClass } from '../../utils/missions';
 import { formatDisplayTime } from '../../utils/weather';
 import { GlassCard } from '../ui/GlassCard';
@@ -98,7 +99,7 @@ export function MissionRegistry({ onSelectMission }: MissionRegistryProps) {
                         operatorId={mission.operator_id}
                         className="operator-link"
                       >
-                        {mission.operator_name ?? operator?.full_name ?? '—'}
+                        {formatShortFio(mission.operator_name ?? operator?.full_name)}
                       </OperatorLink>
                     </td>
                     <td>{mission.drone_serial ?? drone?.serial_number ?? '—'}</td>
@@ -135,22 +136,22 @@ export function MissionRegistry({ onSelectMission }: MissionRegistryProps) {
             return (
               <li
                 key={mission.id}
-                className="mission-registry__row rounded-xl bg-[#1A2235] hover:bg-[#232D42] transition-colors p-4 flex flex-col gap-2 cursor-pointer shadow-sm"
+                className="mission-registry__row rounded-xl bg-[var(--surface-elevated)] hover:bg-[var(--surface-hover)] transition-colors p-4 flex flex-col gap-2 cursor-pointer shadow-sm"
                 onClick={() => onSelectMission(mission)}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className="font-medium">{mission.title}</span>
+                  <span className="font-medium text-[var(--text-primary)]">{mission.title}</span>
                   <span
                     className={`mission-registry__status mission-status shrink-0 ${missionStatusClass(mission.status)}`}
                   >
                     {mission.status}
                   </span>
                 </div>
-                <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-white/80">
+                <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-[var(--text-secondary)]">
                   <dt>Оператор</dt>
                   <dd onClick={(e) => e.stopPropagation()}>
                     <OperatorLink operatorId={mission.operator_id} className="operator-link">
-                      {mission.operator_name ?? operator?.full_name ?? '—'}
+                      {formatShortFio(mission.operator_name ?? operator?.full_name)}
                     </OperatorLink>
                   </dd>
                   <dt>Борт</dt>

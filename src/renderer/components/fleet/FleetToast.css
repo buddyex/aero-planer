@@ -1,8 +1,8 @@
 .fleet-toast {
   position: fixed;
-  top: 1.25rem;
+  top: calc(var(--tape-h, 56px) + 0.75rem);
   right: 1.25rem;
-  z-index: 9999;
+  z-index: 10050;
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
@@ -10,7 +10,7 @@
   padding: 1rem 1.25rem;
   border-radius: var(--radius-lg);
   border: 1px solid var(--risk-high-dim);
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(30, 41, 59, 0.95));
+  background: color-mix(in srgb, var(--risk-high-bg) 70%, var(--surface-elevated));
   backdrop-filter: blur(16px);
   box-shadow: 0 12px 40px var(--risk-high-glow), var(--glass-shadow);
   animation: fleet-toast-in 0.35s ease;

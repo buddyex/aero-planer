@@ -49,6 +49,13 @@ app.use(
 app.use(cors({ origin: config.corsOrigin, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, '../uploads'), {
+    maxAge: '7d',
+    fallthrough: true,
+  }),
+);
 app.use('/api', createApiRouter());
 app.use(errorHandler);
 

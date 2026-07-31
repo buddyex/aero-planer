@@ -9,6 +9,9 @@ src_backup_before_redesign/
 *.log
 logs/
 backend/logs/
+backend/uploads/**
+!backend/uploads/**/
+!backend/uploads/**/.gitkeep
 .DS_Store
 Thumbs.db
 .cursor/

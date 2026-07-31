@@ -13,12 +13,16 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src/renderer'),
     },
   },
+  optimizeDeps: {
+    include: ['maplibre-gl'],
+  },
   server: {
     port: 5173,
     open: false,
     strictPort: true,
     proxy: {
       '/api': { target: 'http://localhost:3001', changeOrigin: true },
+      '/uploads': { target: 'http://localhost:3001', changeOrigin: true },
       '/socket.io': { target: 'http://localhost:3001', ws: true },
     },
   },

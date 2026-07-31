@@ -18,6 +18,23 @@ function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+/** Фамилия Имя Отчество: кириллица, опциональный дефис в каждой части. */
+const FULL_NAME_RE =
+  /^[А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)? [А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)? [А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?$/;
+
+const FULL_NAME_ERROR = 'ФИО должно быть полностью: Фамилия Имя Отчество (кириллица).';
+
+function normalizeFullName(value) {
+  return String(value ?? '')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function isValidFullName(value) {
+  if (typeof value !== 'string') return false;
+  return FULL_NAME_RE.test(normalizeFullName(value));
+}
+
 function requireFields(obj, fields) {
   const missing = [];
   for (const field of fields) {
@@ -207,8 +224,8 @@ function validateSectorBoundary(payload) {
 }
 
 function validateOperatorCreate(payload) {
-  if (!isNonEmptyString(payload?.full_name)) {
-    return { ok: false, error: 'Укажите ФИО оператора.' };
+  if (!isValidFullName(payload?.full_name)) {
+    return { ok: false, error: FULL_NAME_ERROR };
   }
   if (!isNonEmptyString(payload?.login)) {
     return { ok: false, error: 'Укажите логин оператора.' };
@@ -221,8 +238,8 @@ function validateOperatorCreate(payload) {
 }
 
 function validateOperatorUpdate(payload) {
-  if (!isNonEmptyString(payload?.full_name)) {
-    return { ok: false, error: 'Укажите ФИО оператора.' };
+  if (!isValidFullName(payload?.full_name)) {
+    return { ok: false, error: FULL_NAME_ERROR };
   }
   if (!isNonEmptyString(payload?.login)) {
     return { ok: false, error: 'Укажите логин оператора.' };
@@ -267,6 +284,7 @@ module.exports = {
   GEO_BOUNDS,
   SECTOR_RADIUS_MIN_KM,
   SECTOR_RADIUS_MAX_KM,
+  FULL_NAME_ERROR,
   requireFields,
   isPositiveNumber,
   isNonNegativeNumber,
@@ -276,6 +294,8 @@ module.exports = {
   isValidOperatorRole,
   isValidDateTime,
   isStartInPast,
+  isValidFullName,
+  normalizeFullName,
   validateMissionPayload,
   validateDronePayload,
   validateSectorCreate,

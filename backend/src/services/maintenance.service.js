@@ -20,21 +20,35 @@ async function addMaintenanceLog(sessionOperatorId, sessionRole, payload) {
   if (!rbac.PERMISSIONS.maintenanceWrite.includes(sessionRole)) {
     return { ok: false, error: 'Доступ запрещён.' };
   }
-  const result = await run(
-    `INSERT INTO maintenance_logs (drone_id, operator_id, maintenance_date, work_type, description, hours_at_service)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [
-      payload.drone_id,
-      sessionOperatorId,
-      payload.maintenance_date ?? new Date().toISOString().slice(0, 10),
-      payload.work_type,
-      payload.description ?? null,
-      payload.hours_at_service ?? null,
-    ],
-  );
-  const row = await get('SELECT * FROM maintenance_logs WHERE id = ?', [result.insertId]);
-  await logAction(sessionOperatorId, `Открыто ТО борта ID ${payload.drone_id}: ${payload.work_type}`);
-  return { ok: true, data: row };
+
+  const drone = await get('SELECT id, status, serial_number FROM drones WHERE id = ?', [payload.drone_id]);
+  if (!drone) return { ok: false, error: 'Борт не найден.' };
+  if (drone.status === 'Списан') {
+    return {
+      ok: false,
+      error: `Нельзя открыть ТО на списанный борт ${drone.serial_number}.`,
+    };
+  }
+
+  try {
+    const result = await run(
+      `INSERT INTO maintenance_logs (drone_id, operator_id, maintenance_date, work_type, description, hours_at_service)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        payload.drone_id,
+        sessionOperatorId,
+        payload.maintenance_date ?? new Date().toISOString().slice(0, 10),
+        payload.work_type,
+        payload.description ?? null,
+        payload.hours_at_service ?? null,
+      ],
+    );
+    const row = await get('SELECT * FROM maintenance_logs WHERE id = ?', [result.insertId]);
+    await logAction(sessionOperatorId, `Открыто ТО борта ID ${payload.drone_id}: ${payload.work_type}`);
+    return { ok: true, data: row };
+  } catch (error) {
+    return { ok: false, error: error.sqlMessage || error.message || 'Не удалось открыть ТО.' };
+  }
 }
 
 async function completeMaintenance(sessionOperatorId, sessionRole, droneId) {
@@ -43,6 +57,9 @@ async function completeMaintenance(sessionOperatorId, sessionRole, droneId) {
   }
   const drone = await get('SELECT * FROM drones WHERE id = ?', [droneId]);
   if (!drone) return { ok: false, error: 'Борт не найден.' };
+  if (drone.status === 'Списан') {
+    return { ok: false, error: `Списанный борт ${drone.serial_number} нельзя вернуть через ТО.` };
+  }
   if (!['На ТО', 'Ремонт', 'Диагностика'].includes(drone.status)) {
     return { ok: false, error: 'Завершение доступно только для бортов на ТО/ремонте/диагностике.' };
   }
@@ -52,7 +69,7 @@ async function completeMaintenance(sessionOperatorId, sessionRole, droneId) {
      WHERE drone_id = ? AND closed_at IS NULL`,
     [droneId],
   );
-  await run(`UPDATE drones SET status = 'Готов' WHERE id = ?`, [droneId]);
+  await run(`UPDATE drones SET status = 'Готов' WHERE id = ? AND status <> 'Списан'`, [droneId]);
   await logAction(sessionOperatorId, `Завершено обслуживание борта ${drone.serial_number}`);
   const updated = await get('SELECT * FROM drones WHERE id = ?', [droneId]);
   return { ok: true, data: updated };

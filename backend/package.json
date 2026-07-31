@@ -11,6 +11,8 @@
     "init-db": "node scripts/init-db.js",
     "setup-db": "node scripts/init-db.js && node scripts/seed.js",
     "migrate:wear": "node scripts/run-migration.js 002_wear_logic_fix.sql",
+    "migrate:drone-photo": "node scripts/run-migration.js 004_drone_photo.sql",
+    "migrate:drone-writeoff": "node scripts/run-migration.js 005_drone_writeoff.sql",
     "migrate-sqlite": "node scripts/migrate-sqlite-to-mysql.js"
   },
   "dependencies": {
@@ -21,10 +23,14 @@
     "express": "^5.2.1",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^2.2.0",
     "mysql2": "^3.14.1",
     "pdfkit": "^0.17.1",
     "socket.io": "^4.8.1",
     "sqlite3": "^5.1.7",
     "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/multer": "^2.2.0"
   }
 }

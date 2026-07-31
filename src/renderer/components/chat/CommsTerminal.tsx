@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAuth, useSocket } from '../../context/AuthContext';
 import { useApi } from '../../context/ApiContext';
 import type { ChatContactRow, MessageRow } from '../../../shared/types/api.types';
+import { fioAvatarLetter, formatShortFio } from '../../utils/fio';
 import './CommsTerminal.css';
 
 interface CommsTerminalProps {
@@ -269,13 +270,13 @@ export function CommsTerminal({
                       onClick={() => void selectContact(contact)}
                     >
                       <span className="comms-contact__avatar-wrap">
-                        <span className="comms-contact__avatar">{contact.full_name.charAt(0)}</span>
+                        <span className="comms-contact__avatar">{fioAvatarLetter(contact.full_name)}</span>
                         {hasUnread && (
                           <span className="comms-contact__unread" title="Непрочитанные сообщения" />
                         )}
                       </span>
                       <span className="comms-contact__info">
-                        <span className="comms-contact__name">{contact.full_name}</span>
+                        <span className="comms-contact__name">{formatShortFio(contact.full_name)}</span>
                         <span className="comms-contact__role">{contact.role}</span>
                       </span>
                     </button>
@@ -295,11 +296,11 @@ export function CommsTerminal({
                     type="button"
                     className="comms-dialog__peer-link"
                     onClick={() => onOpenProfile?.(activeContact.id)}
-                    aria-label={`Открыть профиль: ${activeContact.full_name}`}
+                    aria-label={`Открыть профиль: ${formatShortFio(activeContact.full_name)}`}
                   >
-                    <span className="comms-dialog__peer-avatar">{activeContact.full_name.charAt(0)}</span>
+                    <span className="comms-dialog__peer-avatar">{fioAvatarLetter(activeContact.full_name)}</span>
                     <span className="comms-dialog__peer-info">
-                      <span className="comms-dialog__peer-name">{activeContact.full_name}</span>
+                      <span className="comms-dialog__peer-name">{formatShortFio(activeContact.full_name)}</span>
                       <span className="comms-dialog__peer-role">{activeContact.role}</span>
                       <span className="comms-dialog__peer-hint">Открыть профиль</span>
                     </span>

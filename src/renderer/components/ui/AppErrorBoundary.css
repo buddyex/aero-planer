@@ -35,8 +35,8 @@
   margin: 0;
   padding: 0.65rem 0.85rem;
   border-radius: var(--radius-sm);
-  background: rgba(239, 68, 68, 0.12);
-  color: #fecaca;
+  background: var(--risk-high-bg);
+  color: var(--risk-high);
   font-size: 0.85rem;
   word-break: break-word;
   width: 100%;

@@ -8,6 +8,7 @@ import { useTheme } from '../../context/ThemeContext';
 import type { OperatorKPIs, OperatorProfile, OperatorRole } from '../../types';
 import { getRolePermissions } from '../../utils/permissions';
 import { getProfileKpiConfig } from '../../utils/operationalKpis';
+import { fioAvatarLetter } from '../../utils/fio';
 import { GlassCard } from '../ui/GlassCard';
 import { KpiCard } from '../ui/KpiCard';
 import './Profile.css';
@@ -171,7 +172,7 @@ export function Profile() {
         <GlassCard accent className="profile__card profile__card--overview">
           <div className="profile__overview-main">
             <div className="profile__identity">
-              <div className="profile__avatar">{displayUser.full_name.charAt(0)}</div>
+              <div className="profile__avatar">{fioAvatarLetter(displayUser.full_name)}</div>
               <div>
                 <p className="profile__name">{displayUser.full_name}</p>
                 <p className="profile__role">{displayUser.role}</p>

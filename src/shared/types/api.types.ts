@@ -58,6 +58,9 @@ export interface DroneRow {
   flight_time_max: number;
   flight_hours?: number;
   status: string;
+  photo_url?: string | null;
+  written_off_at?: string | null;
+  written_off_reason?: string | null;
 }
 
 export interface DroneInput {

@@ -186,6 +186,10 @@ export interface DataApi {
   addDrone: (drone: DroneInput) => Promise<ApiResult<DroneRow>>;
   updateDrone: (id: number, drone: DroneInput) => Promise<ApiResult<DroneRow>>;
   deleteDrone: (id: number) => Promise<ApiResult & { deletedId?: number }>;
+  writeOffDrone: (id: number, reason?: string) => Promise<ApiResult<DroneRow>>;
+  restoreDrone: (id: number) => Promise<ApiResult<DroneRow>>;
+  uploadDronePhoto: (id: number, file: File) => Promise<ApiResult<DroneRow>>;
+  deleteDronePhoto: (id: number) => Promise<ApiResult<DroneRow>>;
   saveFlightSheetPdf: (
     defaultFilename: string,
     pdfDataBase64: string,

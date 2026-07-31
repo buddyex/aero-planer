@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import { useAuth } from '../../context/AuthContext';
 import type { RiskLevel } from '../../types';
@@ -6,7 +6,6 @@ import { canEditSectorBoundaries } from '../../utils/permissions';
 import { formatMetric } from '../../utils/weather';
 import { prepareForNativeDialog, restorePageInput } from '../../utils/mapFocus';
 import { GlassCard } from '../ui/GlassCard';
-import { ExportKmlModal } from './ExportKmlModal';
 import './SectorGrid.css';
 
 function riskClass(level: RiskLevel): string {
@@ -19,12 +18,11 @@ function riskClass(level: RiskLevel): string {
 }
 
 export function SectorGrid() {
-  const { sectors, hasBackend, deleteSector, exportSectorsKml } = useAppData();
+  const { sectors, hasBackend, deleteSector } = useAppData();
   const { user } = useAuth();
 
   const canManageSectors = Boolean(user && canEditSectorBoundaries(user.role) && hasBackend);
 
-  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionInfo, setActionInfo] = useState<string | null>(null);
 
@@ -38,7 +36,6 @@ export function SectorGrid() {
 
     setActionError(null);
     setActionInfo(null);
-    setExportModalOpen(false);
 
     const result = await deleteSector(sectorId);
     if (!result.ok) {
@@ -51,18 +48,6 @@ export function SectorGrid() {
     restorePageInput();
   };
 
-  const handleExport = useCallback(
-    async (sectorId: number) => {
-      const result = await exportSectorsKml(sectorId);
-      if (result.ok) {
-        setActionInfo(result.message ?? 'KML экспортирован.');
-        return { ok: true };
-      }
-      return { ok: false, error: result.error };
-    },
-    [exportSectorsKml],
-  );
-
   return (
     <div className="sector-grid">
       <div className="sector-grid__header">
@@ -70,19 +55,6 @@ export function SectorGrid() {
           <h2 className="section-title">Секторы мониторинга</h2>
           <p className="section-subtitle">Цвет обновляется после обработки метеофайла</p>
         </div>
-        {canManageSectors && (
-          <button
-            type="button"
-            className="btn btn--ghost sector-grid__export-btn"
-            onClick={() => {
-              setActionError(null);
-              setExportModalOpen(true);
-            }}
-            disabled={sectors.length === 0}
-          >
-            Экспорт KML
-          </button>
-        )}
       </div>
 
       {actionError && (
@@ -143,13 +115,6 @@ export function SectorGrid() {
           ))}
         </div>
       )}
-
-      <ExportKmlModal
-        open={exportModalOpen}
-        sectors={sectors}
-        onClose={() => setExportModalOpen(false)}
-        onExport={handleExport}
-      />
     </div>
   );
 }

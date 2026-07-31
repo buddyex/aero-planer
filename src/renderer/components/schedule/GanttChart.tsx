@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import type { Mission, RiskLevel } from '../../types';
 import { MISSION_STATUS_SHORT } from '../../utils/missions';
+import { formatShortFio } from '../../utils/fio';
 import { parseMissionTime } from '../../utils/weather';
 import { GlassCard } from '../ui/GlassCard';
 import { OperatorLink } from '../ui/OperatorLink';
@@ -141,7 +142,7 @@ export function GanttChart({ onMissionClick }: GanttChartProps) {
   const renderMissionMeta = (mission: Mission) => {
     const drone = getDroneById(mission.drone_id);
     const operator = getOperatorById(mission.operator_id);
-    const operatorLabel = mission.operator_name ?? operator?.full_name ?? '—';
+    const operatorLabel = formatShortFio(mission.operator_name ?? operator?.full_name);
     const droneLabel = mission.drone_serial ?? drone?.serial_number ?? '—';
 
     return (
@@ -261,7 +262,7 @@ export function GanttChart({ onMissionClick }: GanttChartProps) {
                   const risk = mission.sector_risk_level ?? sector?.risk_level;
                   const operator = getOperatorById(mission.operator_id);
                   const drone = getDroneById(mission.drone_id);
-                  const operatorLabel = mission.operator_name ?? operator?.full_name ?? '—';
+                  const operatorLabel = formatShortFio(mission.operator_name ?? operator?.full_name);
                   const droneLabel = mission.drone_serial ?? drone?.serial_number ?? '—';
 
                   return (

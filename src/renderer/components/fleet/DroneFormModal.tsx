@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import type { Drone, DronePayload } from '../../types';
+import { resolveDronePhotoUrl } from '../../utils/drones';
 import { Modal } from '../ui/Modal';
 import './DroneFormModal.css';
 
@@ -14,6 +15,11 @@ interface DroneFormState {
   flight_time_max: string;
 }
 
+export interface DroneFormSubmitExtras {
+  photoFile?: File | null;
+  removePhoto?: boolean;
+}
+
 const EMPTY_FORM: DroneFormState = {
   name: '',
   serial_number: '',
@@ -22,6 +28,9 @@ const EMPTY_FORM: DroneFormState = {
   payload_capacity: '5',
   flight_time_max: '120',
 };
+
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
 function toFormState(source?: Pick<Drone, keyof DronePayload>): DroneFormState {
   if (!source) return EMPTY_FORM;
@@ -85,22 +94,55 @@ function validateFormState(form: DroneFormState): { ok: true; payload: DronePayl
 interface DroneFormModalProps {
   open: boolean;
   editingDrone: Drone | null;
+  canManagePhotos: boolean;
   onClose: () => void;
-  onSubmit: (payload: DronePayload) => Promise<{ ok: boolean; error?: string }>;
+  onSubmit: (
+    payload: DronePayload,
+    extras?: DroneFormSubmitExtras,
+  ) => Promise<{ ok: boolean; error?: string }>;
 }
 
-export function DroneFormModal({ open, editingDrone, onClose, onSubmit }: DroneFormModalProps) {
+export function DroneFormModal({
+  open,
+  editingDrone,
+  canManagePhotos,
+  onClose,
+  onSubmit,
+}: DroneFormModalProps) {
   const [form, setForm] = useState<DroneFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [localError, setLocalError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [removePhoto, setRemovePhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
     setLocalError('');
     setFieldErrors({});
+    setPhotoFile(null);
+    setRemovePhoto(false);
     setForm(editingDrone ? toFormState(editingDrone) : EMPTY_FORM);
   }, [open, editingDrone]);
+
+  useEffect(() => {
+    if (!photoFile) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(photoFile);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [photoFile]);
+
+  const existingPhotoUrl = useMemo(() => {
+    if (removePhoto || photoFile) return null;
+    return resolveDronePhotoUrl(editingDrone?.photo_url);
+  }, [editingDrone?.photo_url, photoFile, removePhoto]);
+
+  const displayPhoto = previewUrl ?? existingPhotoUrl;
 
   const clearFieldError = (key: string) => {
     setFieldErrors((prev) => {
@@ -109,6 +151,31 @@ export function DroneFormModal({ open, editingDrone, onClose, onSubmit }: DroneF
       delete next[key];
       return next;
     });
+  };
+
+  const handlePhotoPick = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      setLocalError('Допустимы только JPEG, PNG или WebP.');
+      return;
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      setLocalError('Размер фото не должен превышать 5 МБ.');
+      return;
+    }
+
+    setLocalError('');
+    setRemovePhoto(false);
+    setPhotoFile(file);
+  }, []);
+
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setRemovePhoto(true);
+    setLocalError('');
   };
 
   const handleSubmit = async (event: FormEvent) => {
@@ -123,7 +190,10 @@ export function DroneFormModal({ open, editingDrone, onClose, onSubmit }: DroneF
     }
 
     setSaving(true);
-    const result = await onSubmit(parsed.payload);
+    const extras: DroneFormSubmitExtras | undefined = canManagePhotos
+      ? { photoFile, removePhoto: removePhoto && !photoFile }
+      : undefined;
+    const result = await onSubmit(parsed.payload, extras);
     setSaving(false);
 
     if (result.ok) {
@@ -147,6 +217,54 @@ export function DroneFormModal({ open, editingDrone, onClose, onSubmit }: DroneF
       wide
     >
       <form className="drone-form" onSubmit={handleSubmit}>
+        {canManagePhotos && (
+          <div className="drone-form__photo">
+            <div className={`drone-form__photo-frame${displayPhoto ? ' drone-form__photo-frame--filled' : ''}`}>
+              {displayPhoto ? (
+                <img src={displayPhoto} alt="" className="drone-form__photo-img" />
+              ) : (
+                <div className="drone-form__photo-placeholder">
+                  <svg viewBox="0 0 64 64" className="drone-form__photo-icon" aria-hidden>
+                    <path
+                      fill="currentColor"
+                      d="M32 10c-3.3 0-6 2.7-6 6v2h-4l-3 4H12c-2.2 0-4 1.8-4 4v22c0 2.2 1.8 4 4 4h40c2.2 0 4-1.8 4-4V26c0-2.2-1.8-4-4-4H45l-3-4h-4v-2c0-3.3-2.7-6-6-6zm0 16c6.1 0 11 4.9 11 11s-4.9 11-11 11-11-4.9-11-11 4.9-11 11-11zm0 4a7 7 0 100 14 7 7 0 000-14z"
+                    />
+                  </svg>
+                  <span>Фото борта</span>
+                </div>
+              )}
+            </div>
+            <div className="drone-form__photo-actions">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="drone-form__photo-input"
+                onChange={handlePhotoPick}
+              />
+              <button
+                type="button"
+                className="btn btn--secondary btn--sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={saving}
+              >
+                {displayPhoto ? 'Заменить фото' : 'Выбрать фото'}
+              </button>
+              {displayPhoto && (
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--sm"
+                  onClick={handleRemovePhoto}
+                  disabled={saving}
+                >
+                  Убрать
+                </button>
+              )}
+              <p className="drone-form__photo-hint">JPEG, PNG или WebP · до 5 МБ</p>
+            </div>
+          </div>
+        )}
+
         <div className="drone-form__grid">
           <div className={`form-field${fieldErrors.name ? ' form-field--invalid' : ''}`}>
             <label className="form-field__label" htmlFor="drone-name">

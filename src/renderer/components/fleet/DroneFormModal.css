@@ -1,3 +1,82 @@
+.drone-form__photo {
+  display: grid;
+  grid-template-columns: minmax(140px, 200px) 1fr;
+  gap: 1rem 1.25rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+  border: 1px solid var(--glass-border);
+}
+
+.drone-form__photo-frame {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: calc(var(--radius-md) - 2px);
+  background:
+    linear-gradient(145deg, rgba(46, 196, 182, 0.12), transparent 55%),
+    var(--glass-bg);
+  border: 1px dashed var(--glass-border);
+}
+
+.drone-form__photo-frame--filled {
+  border-style: solid;
+}
+
+.drone-form__photo-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.drone-form__photo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 100%;
+  padding: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.drone-form__photo-icon {
+  width: 2rem;
+  height: 2rem;
+  opacity: 0.55;
+}
+
+.drone-form__photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.drone-form__photo-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.drone-form__photo-hint {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 .drone-form__grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -21,6 +100,14 @@
 }
 
 @media (max-width: 640px) {
+  .drone-form__photo {
+    grid-template-columns: 1fr;
+  }
+
+  .drone-form__photo-frame {
+    max-width: 240px;
+  }
+
   .drone-form__grid {
     grid-template-columns: 1fr;
   }

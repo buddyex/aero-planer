@@ -58,12 +58,12 @@ export function TelemetryWidget({
     <PremiumCard title={label} icon={icon} className={cn(className)}>
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0 space-y-1">
-          <p className="font-mono text-3xl font-medium tracking-tight text-white">
+          <p className="font-mono text-3xl font-medium tracking-tight text-[var(--text-primary)]">
             {value}
-            {unit ? <span className="ml-0.5 text-2xl text-slate-400">{unit}</span> : null}
+            {unit ? <span className="ml-0.5 text-2xl text-[var(--text-muted)]">{unit}</span> : null}
           </p>
           {caption ? (
-            <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400">
+            <p className="text-[10px] font-medium uppercase tracking-widest text-[var(--text-muted)]">
               {caption}
             </p>
           ) : null}

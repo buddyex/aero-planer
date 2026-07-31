@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import type { Battery, BatteryInspectionLog } from '../../types';
 import type { BatteryInspectionFormPayload } from './BatteryInspectionModal';
 import { isBatteryNearInspection } from '../../utils/batteries';
+import { formatShortFio } from '../../utils/fio';
 import { canCompleteMaintenance } from '../../utils/permissions';
 import { GlassCard } from '../ui/GlassCard';
 import { OperatorLink } from '../ui/OperatorLink';
@@ -253,15 +254,15 @@ export function BatteryRegistry({ onPendingCountChange }: BatteryRegistryProps) 
               {batteries.map((battery) => (
                 <li
                   key={battery.id}
-                  className="rounded-xl border border-white/10 bg-white/5 p-4 flex flex-col gap-2"
+                  className="rounded-xl border border-[var(--glass-border)] bg-[var(--surface-elevated)] p-4 flex flex-col gap-2"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-medium">{battery.serial_number}</span>
+                    <span className="font-medium text-[var(--text-primary)]">{battery.serial_number}</span>
                     <span className={`battery-registry__status ${statusClass(battery.status)}`}>
                       {battery.status}
                     </span>
                   </div>
-                  <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-white/80">
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-[var(--text-secondary)]">
                     <dt>Тип</dt>
                     <dd>{battery.type}</dd>
                     <dt>Ёмкость</dt>
@@ -412,10 +413,10 @@ export function BatteryRegistry({ onPendingCountChange }: BatteryRegistryProps) 
                     <span className="battery-registry__history-operator-label">Техник</span>
                     {log.operator_id ? (
                       <OperatorLink operatorId={log.operator_id} className="operator-link">
-                        {log.operator_name ?? '—'}
+                        {formatShortFio(log.operator_name)}
                       </OperatorLink>
                     ) : (
-                      <span>{log.operator_name ?? '—'}</span>
+                      <span>{formatShortFio(log.operator_name)}</span>
                     )}
                   </div>
                 </li>

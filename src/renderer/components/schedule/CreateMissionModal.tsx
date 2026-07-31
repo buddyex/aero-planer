@@ -10,6 +10,7 @@ import {
   logBlockedLaunchAttempt,
   type MissionWeatherRisk,
 } from '../../utils/missionWeatherRisk';
+import { formatShortFio } from '../../utils/fio';
 import { Modal } from '../ui/Modal';
 import { AppSelect } from '../ui/AppSelect';
 import {
@@ -81,6 +82,7 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
     drone.status === 'Готов' && !isDroneBlockedByFlightHours(drone.flight_hours);
 
   const getDroneStatusSuffix = (drone: (typeof selectableDrones)[number]) => {
+    if (drone.status === 'Списан') return ' (Списан)';
     if (['На ТО', 'Ремонт'].includes(drone.status)) return ` (${drone.status})`;
     if (isDroneBlockedByFlightHours(drone.flight_hours)) return ' (Превышен налёт)';
     if (drone.status !== 'Готов') return ` (${drone.status})`;
@@ -391,7 +393,7 @@ export function CreateMissionModal({ open, onClose, mission = null }: CreateMiss
                 ? [{ value: 0, label: 'Нет доступных операторов', disabled: true }]
                 : pilotOptions.map((o) => ({
                     value: o.id,
-                    label: `${o.full_name} — ${o.role}`,
+                    label: `${formatShortFio(o.full_name)} — ${o.role}`,
                   }))
             }
           />

@@ -3,6 +3,7 @@ import { useAppData } from '../../context/AppDataContext';
 import { useAuth } from '../../context/AuthContext';
 import type { Mission } from '../../types';
 import { formatMissionId } from '../../utils/missions';
+import { formatShortFio } from '../../utils/fio';
 import { canApproveMission, canRejectMission } from '../../utils/permissions';
 import { formatDisplayTime } from '../../utils/weather';
 import { Modal } from '../ui/Modal';
@@ -75,7 +76,7 @@ export function MissionApprovalModal({
             <dt>Оператор</dt>
             <dd>
               <OperatorLink operatorId={mission.operator_id}>
-                {mission.operator_name ?? '—'}
+                {formatShortFio(mission.operator_name)}
               </OperatorLink>
             </dd>
           </div>

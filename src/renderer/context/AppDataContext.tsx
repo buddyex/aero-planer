@@ -734,6 +734,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
       const drone = drones.find((d) => d.id === payload.drone_id);
       if (!drone) return { ok: false, error: 'Борт БПЛА не найден.' };
+      if (drone.status === 'Списан') {
+        return {
+          ok: false,
+          error: `Борт ${drone.serial_number} списан и недоступен для назначения на миссии.`,
+        };
+      }
       if (drone.status !== 'Готов') {
         return {
           ok: false,
@@ -824,9 +830,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       );
 
       if (mission.drone_id !== payload.drone_id) {
+        const nextDrone = drones.find((d) => d.id === payload.drone_id);
+        if (nextDrone?.status === 'Списан') {
+          return {
+            ok: false,
+            error: `Борт ${nextDrone.serial_number} списан и недоступен для назначения на миссии.`,
+          };
+        }
         setDrones((prev) =>
           prev.map((d) => {
-            if (d.id === mission.drone_id) return { ...d, status: 'Готов' };
+            if (d.id === mission.drone_id && d.status !== 'Списан') return { ...d, status: 'Готов' };
             if (d.id === payload.drone_id) return { ...d, status: 'Запланирован' };
             return d;
           }),
@@ -845,7 +858,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
       return { ok: true };
     },
-    [api, missions, refreshMissionsFromDb, refreshDronesFromDb, refreshOperatorsFromDb, refreshDashboardStatsFromDb],
+    [api, drones, missions, refreshMissionsFromDb, refreshDronesFromDb, refreshOperatorsFromDb, refreshDashboardStatsFromDb],
   );
 
   const approveMission = useCallback(

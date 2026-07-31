@@ -1,4 +1,4 @@
-export type DroneStatus = 'Готов' | 'Запланирован' | 'На ТО' | 'Ремонт' | 'Диагностика' | 'В полете';
+export type DroneStatus = 'Готов' | 'Запланирован' | 'На ТО' | 'Ремонт' | 'Диагностика' | 'В полете' | 'Списан';
 export type OperatorRole = 'Администратор' | 'Руководитель' | 'Техник' | 'Оператор';
 
 export const OPERATOR_ROLES: OperatorRole[] = [
@@ -39,6 +39,9 @@ export interface Drone {
   flight_time_max: number;
   flight_hours?: number;
   status: DroneStatus;
+  photo_url?: string | null;
+  written_off_at?: string | null;
+  written_off_reason?: string | null;
 }
 
 export interface DronePayload {

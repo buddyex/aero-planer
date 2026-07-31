@@ -11,7 +11,8 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  opacity: 0.85;
+  color: inherit;
+  opacity: 0.9;
 }
 
 .risk-assessment__message {
@@ -19,22 +20,29 @@
   font-size: 0.9rem;
   font-weight: 600;
   line-height: 1.45;
+  color: inherit;
 }
 
 .risk-assessment--critical {
-  background: rgba(220, 38, 38, 0.12);
-  border-color: rgba(220, 38, 38, 0.45);
-  color: #fca5a5;
+  background: var(--risk-high-bg);
+  border-color: var(--risk-high-dim);
+  color: var(--risk-high);
 }
 
 .risk-assessment--warning {
-  background: rgba(234, 179, 8, 0.12);
-  border-color: rgba(234, 179, 8, 0.45);
-  color: #fde047;
+  background: var(--risk-medium-bg);
+  border-color: var(--risk-medium-dim);
+  color: var(--risk-medium);
 }
 
 .risk-assessment--ok {
-  background: rgba(34, 197, 94, 0.12);
-  border-color: rgba(34, 197, 94, 0.45);
-  color: #86efac;
+  background: var(--risk-low-bg);
+  border-color: var(--risk-low-dim);
+  color: var(--risk-low);
+}
+
+.risk-assessment--unknown {
+  background: var(--surface-elevated);
+  border-color: var(--glass-border);
+  color: var(--text-secondary);
 }

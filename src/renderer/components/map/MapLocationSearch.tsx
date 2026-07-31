@@ -1,27 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { useMap } from 'react-leaflet';
+import { useState, type FormEvent } from 'react';
 import './MapLocationSearch.css';
 
 export interface MapSearchTarget {
   lat: number;
   lon: number;
   label: string;
-}
-
-interface MapFlyToProps {
-  target: MapSearchTarget | null;
-  zoom?: number;
-}
-
-export function MapFlyTo({ target, zoom = 11 }: MapFlyToProps) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!target) return;
-    map.flyTo([target.lat, target.lon], zoom, { duration: 1.2 });
-  }, [map, target, zoom]);
-
-  return null;
 }
 
 interface MapLocationSearchProps {

@@ -16,12 +16,12 @@
 .mission-approval__title {
   margin: 0;
   font-size: 1.1rem;
-  color: #f1f5f9;
+  color: var(--text-primary);
 }
 
 .mission-approval__id {
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--text-muted);
   font-family: var(--font-mono);
 }
 
@@ -42,7 +42,7 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--text-muted);
   margin-bottom: 0.25rem;
 }
 
@@ -50,7 +50,7 @@
   margin: 0;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #f1f5f9;
+  color: var(--text-primary);
   line-height: 1.4;
   word-break: break-word;
 }
@@ -63,13 +63,14 @@
 }
 
 .mission-approval__reject {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.45);
-  color: #fecaca;
+  background: var(--risk-high-bg);
+  border: 1px solid var(--risk-high-dim);
+  color: var(--risk-high);
 }
 
 .mission-approval__reject:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.25);
+  background: var(--risk-high-bg);
+  border-color: var(--risk-high);
 }
 
 @media (max-width: 480px) {

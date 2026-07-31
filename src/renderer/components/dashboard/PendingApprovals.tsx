@@ -3,6 +3,7 @@ import { useAppData } from '../../context/AppDataContext';
 import { useAuth } from '../../context/AuthContext';
 import type { Mission } from '../../types';
 import { isManagerLikeRole } from '../../utils/operationalKpis';
+import { formatShortFio } from '../../utils/fio';
 import { formatDisplayTime } from '../../utils/weather';
 import { MissionApprovalModal } from './MissionApprovalModal';
 import './PendingApprovals.css';
@@ -49,7 +50,7 @@ export function PendingApprovals() {
                   <div className="pending-approvals__cell">
                     <span className="pending-approvals__label">Оператор</span>
                     <span className="pending-approvals__value">
-                      {mission.operator_name ?? '—'}
+                      {formatShortFio(mission.operator_name)}
                     </span>
                   </div>
                   <div className="pending-approvals__cell">

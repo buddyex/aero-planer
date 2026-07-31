@@ -1,6 +1,6 @@
 .app-toast {
   position: fixed;
-  top: 1.25rem;
+  top: calc(var(--tape-h, 56px) + 0.75rem);
   right: 1.25rem;
   z-index: 10000;
   display: flex;
@@ -15,21 +15,21 @@
 }
 
 .app-toast--success {
-  border: 1px solid rgba(34, 197, 94, 0.45);
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(30, 41, 59, 0.95));
-  box-shadow: 0 12px 40px rgba(34, 197, 94, 0.2), var(--glass-shadow);
+  border: 1px solid var(--risk-low-dim);
+  background: color-mix(in srgb, var(--risk-low-bg) 70%, var(--surface-elevated));
+  box-shadow: 0 12px 40px var(--risk-low-dim), var(--glass-shadow);
 }
 
 .app-toast--error {
   border: 1px solid var(--risk-high-dim);
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(30, 41, 59, 0.95));
+  background: color-mix(in srgb, var(--risk-high-bg) 70%, var(--surface-elevated));
   box-shadow: 0 12px 40px var(--risk-high-glow), var(--glass-shadow);
 }
 
 .app-toast--info {
-  border: 1px solid rgba(59, 130, 246, 0.45);
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(30, 41, 59, 0.95));
-  box-shadow: 0 12px 40px rgba(59, 130, 246, 0.2), var(--glass-shadow);
+  border: 1px solid var(--accent-primary-dim);
+  background: color-mix(in srgb, var(--accent-primary-bg) 70%, var(--surface-elevated));
+  box-shadow: 0 12px 40px var(--accent-glow), var(--glass-shadow);
 }
 
 .app-toast__icon {
@@ -78,14 +78,14 @@
   position: relative;
   height: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--glass-border);
   overflow: hidden;
 }
 
 .app-toast__timer-bar {
   height: 100%;
   border-radius: inherit;
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--text-muted);
   transition: width 1s linear;
 }
 

@@ -10,7 +10,8 @@ const ROLES = {
 const PERMISSIONS = {
   manageOperators: [ROLES.ADMIN],
   maintenanceWrite: [ROLES.ADMIN, ROLES.TECH],
-  fleetWrite: [ROLES.HEAD, ROLES.TECH],
+  fleetWrite: [ROLES.ADMIN, ROLES.HEAD, ROLES.TECH],
+  fleetPhotoWrite: [ROLES.ADMIN, ROLES.TECH],
   missionWrite: [ROLES.ADMIN, ROLES.HEAD],
   missionSubmit: [ROLES.OPERATOR],
   missionApprove: [ROLES.ADMIN, ROLES.HEAD],

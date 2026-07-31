@@ -9,6 +9,7 @@ import {
   type MissionWeatherRisk,
 } from '../../utils/missionWeatherRisk';
 import { formatMissionId, getOperatorAssignmentStatus, MISSION_TRANSITION_LABEL, missionStatusClass } from '../../utils/missions';
+import { formatShortFio } from '../../utils/fio';
 import {
   canDownloadFlightSheet,
   canEditMission,
@@ -167,10 +168,10 @@ export function MissionDetailModal({ mission, open, onClose, onReportSaved, onEd
             <dd>
               {mission.operator_id ? (
                 <OperatorLink operatorId={mission.operator_id} className="operator-link">
-                  {mission.operator_name ?? operator?.full_name ?? '—'}
+                  {formatShortFio(mission.operator_name ?? operator?.full_name)}
                 </OperatorLink>
               ) : (
-                mission.operator_name ?? operator?.full_name ?? '—'
+                formatShortFio(mission.operator_name ?? operator?.full_name)
               )}
               {operator?.role === 'Оператор' && operatorAssignmentStatus
                 ? ` · ${operatorAssignmentStatus}`

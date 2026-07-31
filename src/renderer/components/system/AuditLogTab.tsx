@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { AuditLogRow } from '../../../shared/types/api.types';
 import { useApi } from '../../context/ApiContext';
+import { formatShortFio } from '../../utils/fio';
 import { GlassCard } from '../ui/GlassCard';
 
 const PAGE_SIZE = 25;
@@ -125,7 +126,7 @@ export function AuditLogTab() {
                 rows.map((row) => (
                   <tr key={row.id}>
                     <td title={row.id}>{shortUuid(row.id)}</td>
-                    <td>{row.operator_name ?? '—'}</td>
+                    <td>{formatShortFio(row.operator_name)}</td>
                     <td>{row.action_text}</td>
                     <td>{formatTs(row.timestamp)}</td>
                   </tr>

@@ -48,7 +48,10 @@ CREATE TABLE drones (
     payload_capacity DOUBLE NOT NULL CHECK (payload_capacity > 0),
     flight_time_max INT NOT NULL CHECK (flight_time_max > 0),
     flight_hours DOUBLE NOT NULL DEFAULT 0 CHECK (flight_hours >= 0),
-    status ENUM('Готов','Запланирован','На ТО','Ремонт','Диагностика','В полете') NOT NULL DEFAULT 'Готов'
+    status ENUM('Готов','Запланирован','На ТО','Ремонт','Диагностика','В полете','Списан') NOT NULL DEFAULT 'Готов',
+    photo_url VARCHAR(512) NULL,
+    written_off_at DATETIME NULL,
+    written_off_reason VARCHAR(512) NULL
 ) ENGINE=InnoDB;
 
 CREATE TABLE operators (
@@ -59,7 +62,10 @@ CREATE TABLE operators (
     pin_hash VARCHAR(128) NULL,
     pin_salt VARCHAR(64) NULL,
     role ENUM('Администратор','Руководитель','Техник','Оператор') NOT NULL,
-    duty_status ENUM('Свободен','Запланирован','В миссии') NOT NULL DEFAULT 'Свободен'
+    duty_status ENUM('Свободен','Запланирован','В миссии') NOT NULL DEFAULT 'Свободен',
+    CONSTRAINT chk_operators_full_name CHECK (
+        full_name REGEXP '^[А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)? [А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)? [А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)?$'
+    )
 ) ENGINE=InnoDB;
 
 CREATE TABLE sectors (
@@ -238,6 +244,18 @@ BEGIN
     END IF;
 END$$
 
+CREATE TRIGGER trg_block_maintenance_on_written_off
+BEFORE INSERT ON maintenance_logs
+FOR EACH ROW
+BEGIN
+    DECLARE v_drone_status VARCHAR(32);
+    SELECT status INTO v_drone_status FROM drones WHERE id = NEW.drone_id;
+    IF v_drone_status = 'Списан' THEN
+        SIGNAL SQLSTATE '45000'
+          SET MESSAGE_TEXT = 'Ошибка АСОИУ: нельзя открыть ТО на списанный борт.';
+    END IF;
+END$$
+
 CREATE TRIGGER trg_sync_drone_status_on_maintenance_insert
 AFTER INSERT ON maintenance_logs
 FOR EACH ROW
@@ -247,7 +265,8 @@ BEGIN
             WHEN NEW.work_type = 'Ремонт' THEN 'Ремонт'
             WHEN NEW.work_type = 'Диагностика' THEN 'Диагностика'
             ELSE 'На ТО'
-        END WHERE id = NEW.drone_id;
+        END
+        WHERE id = NEW.drone_id AND status <> 'Списан';
     END IF;
 END$$
 
@@ -265,6 +284,10 @@ BEGIN
     SELECT status INTO v_battery_status FROM batteries WHERE id = NEW.battery_id;
     SELECT role, duty_status INTO v_op_role, v_op_duty FROM operators WHERE id = NEW.operator_id;
 
+    IF v_drone_status = 'Списан' THEN
+        SIGNAL SQLSTATE '45000'
+          SET MESSAGE_TEXT = 'Ошибка АСОИУ: борт списан и недоступен для назначения на миссии.';
+    END IF;
     IF v_flight_hours >= 100.0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ошибка АСОИУ: Превышен лимит налёта (>=100 ч). Требуется плановое ТО.';
     END IF;
@@ -311,7 +334,8 @@ AFTER INSERT ON missions
 FOR EACH ROW
 BEGIN
     IF NEW.status = 'К выполнению' THEN
-        UPDATE drones SET status = 'Запланирован' WHERE id = NEW.drone_id;
+        UPDATE drones SET status = 'Запланирован'
+        WHERE id = NEW.drone_id AND status <> 'Списан';
         UPDATE operators SET duty_status = 'Запланирован'
         WHERE id = NEW.operator_id AND role = 'Оператор';
     END IF;
@@ -322,7 +346,8 @@ AFTER UPDATE ON missions
 FOR EACH ROW
 BEGIN
     IF OLD.status = 'Ожидает утверждения' AND NEW.status = 'К выполнению' THEN
-        UPDATE drones SET status = 'Запланирован' WHERE id = NEW.drone_id;
+        UPDATE drones SET status = 'Запланирован'
+        WHERE id = NEW.drone_id AND status <> 'Списан';
         UPDATE operators SET duty_status = 'Запланирован'
         WHERE id = NEW.operator_id AND role = 'Оператор';
     END IF;
@@ -355,6 +380,7 @@ BEGIN
         IF OLD.drone_id != NEW.drone_id THEN
             UPDATE drones SET status = 'Готов'
             WHERE id = OLD.drone_id
+              AND status <> 'Списан'
               AND NOT EXISTS (
                 SELECT 1 FROM missions m
                 WHERE m.drone_id = OLD.drone_id
@@ -369,9 +395,11 @@ BEGIN
               );
 
             IF NEW.status = 'Выполняется' THEN
-                UPDATE drones SET status = 'В полете' WHERE id = NEW.drone_id;
+                UPDATE drones SET status = 'В полете'
+                WHERE id = NEW.drone_id AND status <> 'Списан';
             ELSEIF NEW.status = 'К выполнению' THEN
-                UPDATE drones SET status = 'Запланирован' WHERE id = NEW.drone_id;
+                UPDATE drones SET status = 'Запланирован'
+                WHERE id = NEW.drone_id AND status <> 'Списан';
             END IF;
         END IF;
     END IF;
@@ -404,6 +432,14 @@ BEGIN
     DECLARE v_op_role VARCHAR(32);
     DECLARE v_op_duty VARCHAR(32);
 
+    IF NEW.drone_id != OLD.drone_id THEN
+        SELECT status INTO v_drone_status FROM drones WHERE id = NEW.drone_id;
+        IF v_drone_status = 'Списан' THEN
+            SIGNAL SQLSTATE '45000'
+              SET MESSAGE_TEXT = 'Ошибка АСОИУ: борт списан и недоступен для назначения на миссии.';
+        END IF;
+    END IF;
+
     IF NEW.status != OLD.status THEN
         IF OLD.status IN ('Завершено', 'Отменено', 'Отклонено') THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Миссия уже закрыта и не может быть изменена.';
@@ -427,6 +463,10 @@ BEGIN
         SELECT status INTO v_drone_status FROM drones WHERE id = NEW.drone_id;
         SELECT role, duty_status INTO v_op_role, v_op_duty FROM operators WHERE id = NEW.operator_id;
 
+        IF NEW.status IN ('К выполнению', 'Выполняется') AND v_drone_status = 'Списан' THEN
+            SIGNAL SQLSTATE '45000'
+              SET MESSAGE_TEXT = 'Ошибка АСОИУ: борт списан и недоступен для назначения на миссии.';
+        END IF;
         IF NEW.status = 'Выполняется' AND v_drone_status != 'Запланирован' THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ошибка АСОИУ: Борт не зарезервирован под эту миссию.';
         END IF;
@@ -447,7 +487,8 @@ FOR EACH ROW
 BEGIN
     IF NEW.status != OLD.status THEN
         IF NEW.status = 'Выполняется' THEN
-            UPDATE drones SET status = 'В полете' WHERE id = NEW.drone_id;
+            UPDATE drones SET status = 'В полете'
+            WHERE id = NEW.drone_id AND status <> 'Списан';
         END IF;
         IF NEW.status IN ('Завершено', 'Отменено') AND OLD.status IN ('Выполняется', 'К выполнению') THEN
             UPDATE drones SET status = CASE
@@ -460,7 +501,7 @@ BEGIN
                 ) THEN 'Готов'
                 ELSE status
             END
-            WHERE id = NEW.drone_id;
+            WHERE id = NEW.drone_id AND status <> 'Списан';
         END IF;
     END IF;
 END$$
@@ -506,8 +547,9 @@ CREATE TRIGGER trg_auto_block_drone_on_flight_hours
 AFTER UPDATE ON drones
 FOR EACH ROW
 BEGIN
-    IF NEW.flight_hours >= 100.0 AND NEW.status NOT IN ('На ТО', 'Ремонт', 'Диагностика') THEN
-        UPDATE drones SET status = 'На ТО' WHERE id = NEW.id;
+    IF NEW.flight_hours >= 100.0
+       AND NEW.status NOT IN ('На ТО', 'Ремонт', 'Диагностика', 'Списан') THEN
+        UPDATE drones SET status = 'На ТО' WHERE id = NEW.id AND status <> 'Списан';
     END IF;
 END$$
 

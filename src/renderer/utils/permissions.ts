@@ -51,6 +51,8 @@ const ROLE_PERMISSIONS: Record<OperatorRole, string[]> = {
     'Метео-центр',
     'Принудительная синхронизация метео',
     'Создание миссий и секторов',
+    'Управление флотом БПЛА',
+    'Фотографии бортов флота',
   ],
   Руководитель: [
     'Мониторинг дашборда и аналитики',
@@ -58,7 +60,7 @@ const ROLE_PERMISSIONS: Record<OperatorRole, string[]> = {
     'Метео-центр',
     'Управление флотом БПЛА',
   ],
-  Техник: ['Управление флотом БПЛА', 'Журнал технического обслуживания'],
+  Техник: ['Управление флотом БПЛА', 'Фотографии бортов флота', 'Журнал технического обслуживания'],
   Оператор: [
     'Мониторинг дашборда',
     'Просмотр расписания миссий',
@@ -221,4 +223,19 @@ export function canEditSectorBoundaries(role: OperatorRole): boolean {
 
 export function canCompleteMaintenance(role: OperatorRole): boolean {
   return role === 'Администратор' || role === 'Техник';
+}
+
+/** CRUD флота: Администратор, Руководитель, Техник */
+export function canManageFleet(role: OperatorRole): boolean {
+  return role === 'Администратор' || role === 'Руководитель' || role === 'Техник';
+}
+
+/** Фото бортов: только Администратор и Техник */
+export function canManageDronePhotos(role: OperatorRole): boolean {
+  return role === 'Администратор' || role === 'Техник';
+}
+
+/** Восстановление списанного борта — только Администратор */
+export function canRestoreWrittenOffDrone(role: OperatorRole): boolean {
+  return role === 'Администратор';
 }
