@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAppData } from '../../context/AppDataContext';
 import { useAuth } from '../../context/AuthContext';
 import type { CreateSectorPayload, Sector } from '../../types';
-import { canEditSectorBoundaries } from '../../utils/permissions';
+import { canEditSectorBoundaries, canManageSectors } from '../../utils/permissions';
 import { sectorsToGeoJSON } from '../../utils/map';
 import { GlassCard } from '../ui/GlassCard';
 import {
@@ -41,6 +41,7 @@ export function SectorMap({ variant = 'card' }: SectorMapProps) {
   } = useAppData();
 
   const canEdit = Boolean(user && canEditSectorBoundaries(user.role) && hasBackend);
+  const canManage = Boolean(user && canManageSectors(user.role) && hasBackend);
 
   const [mounted, setMounted] = useState(false);
   const [hudToolbarHost, setHudToolbarHost] = useState<HTMLElement | null>(null);
@@ -198,7 +199,7 @@ export function SectorMap({ variant = 'card' }: SectorMapProps) {
   const editActions = (
     <div className="sector-map-card__actions">
       {viewToggle}
-      {canEdit ? (
+      {canManage ? (
         <>
           <button
             type="button"
@@ -234,6 +235,7 @@ export function SectorMap({ variant = 'card' }: SectorMapProps) {
           onPick={handleMapPick}
           popupActions={{
             canEdit,
+            canManage,
             onEdit: handleEditFromPopup,
             onDelete: handleDelete,
             onExportKml: handleExportSectorKml,

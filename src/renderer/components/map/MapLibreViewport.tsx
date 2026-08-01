@@ -21,6 +21,7 @@ const DEFAULT_BEARING = -18;
 
 export interface SectorPopupActions {
   canEdit: boolean;
+  canManage: boolean;
   onEdit: (sectorId: number) => void;
   onDelete: (sectorId: number, sectorName: string) => void;
   onExportKml: (sectorId: number) => void;
@@ -42,7 +43,11 @@ function riskMod(level: string | undefined): 'high' | 'medium' | 'low' {
   return 'low';
 }
 
-function buildPopupHtml(props: Record<string, unknown>, canEdit: boolean): string {
+function buildPopupHtml(
+  props: Record<string, unknown>,
+  canEdit: boolean,
+  canManage: boolean,
+): string {
   const name = String(props.name ?? 'Сектор');
   const risk = String(props.risk_level ?? 'Низкий');
   const shape = props.shape_type === 'polygon' ? 'полигон' : 'круг';
@@ -56,19 +61,24 @@ function buildPopupHtml(props: Record<string, unknown>, canEdit: boolean): strin
       : '—';
   const id = Number(props.id);
 
-  const actions = canEdit
-    ? `<div class="sector-map-popup__actions">
-        <button type="button" class="sector-map-popup__btn sector-map-popup__btn--export" data-action="export" data-id="${id}" title="Экспорт KML">
+  const buttons: string[] = [];
+  if (canEdit || canManage) {
+    buttons.push(`<button type="button" class="sector-map-popup__btn sector-map-popup__btn--export" data-action="export" data-id="${id}" title="Экспорт KML">
           <span class="sector-map-popup__btn-icon" aria-hidden>↓</span>KML
-        </button>
-        <button type="button" class="sector-map-popup__btn sector-map-popup__btn--edit" data-action="edit" data-id="${id}">
+        </button>`);
+  }
+  if (canEdit) {
+    buttons.push(`<button type="button" class="sector-map-popup__btn sector-map-popup__btn--edit" data-action="edit" data-id="${id}">
           Редактировать границы
-        </button>
-        <button type="button" class="sector-map-popup__btn sector-map-popup__btn--delete" data-action="delete" data-id="${id}" data-name="${escapeAttr(name)}">
+        </button>`);
+  }
+  if (canManage) {
+    buttons.push(`<button type="button" class="sector-map-popup__btn sector-map-popup__btn--delete" data-action="delete" data-id="${id}" data-name="${escapeAttr(name)}">
           Удалить
-        </button>
-      </div>`
-    : '';
+        </button>`);
+  }
+  const actions =
+    buttons.length > 0 ? `<div class="sector-map-popup__actions">${buttons.join('')}</div>` : '';
 
   return `<div class="sector-map-popup sector-map-popup--${riskMod(risk)}">
     <div class="sector-map-popup__indicator" aria-hidden></div>
@@ -339,7 +349,7 @@ export function MapLibreViewport({
 
       const props = feature.properties as Record<string, unknown>;
       const actions = popupActionsRef.current;
-      const html = buildPopupHtml(props, actions.canEdit);
+      const html = buildPopupHtml(props, actions.canEdit, actions.canManage);
 
       popupRef.current?.setLngLat(event.lngLat).setHTML(html).addTo(map);
 

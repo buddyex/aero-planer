@@ -46,7 +46,7 @@ async function getSectorsRisk(sessionRole) {
 }
 
 async function createSector(sessionOperatorId, sessionRole, sectorName, centerLat, centerLon, radiusKm = 20, options = {}) {
-  if (!rbac.PERMISSIONS.sectorWrite.includes(sessionRole)) {
+  if (!rbac.PERMISSIONS.sectorManage.includes(sessionRole)) {
     return { ok: false, error: 'Доступ запрещён.' };
   }
 
@@ -101,7 +101,7 @@ async function updateSectorBoundary(sessionOperatorId, sessionRole, sectorId, pa
 }
 
 async function deleteSector(sessionOperatorId, sessionRole, sectorId) {
-  if (!rbac.PERMISSIONS.sectorWrite.includes(sessionRole)) {
+  if (!rbac.PERMISSIONS.sectorManage.includes(sessionRole)) {
     return { ok: false, error: 'Доступ запрещён.' };
   }
   await run('UPDATE sectors SET is_active = 0 WHERE id = ?', [sectorId]);
@@ -110,11 +110,14 @@ async function deleteSector(sessionOperatorId, sessionRole, sectorId) {
 }
 
 async function importSectorsFromKmlContent(kmlText, sessionOperatorId, sessionRole) {
-  if (!rbac.PERMISSIONS.sectorWrite.includes(sessionRole)) {
+  if (!rbac.PERMISSIONS.sectorManage.includes(sessionRole)) {
     return { ok: false, error: 'Доступ запрещён.' };
   }
   if (!kmlText?.trim()) {
     return { ok: false, error: 'Укажите содержимое KML-файла.' };
+  }
+  if (kmlText.length > 2 * 1024 * 1024) {
+    return { ok: false, error: 'KML-файл слишком большой (макс. 2 МБ).' };
   }
   const placemarks = kmlService.parseKmlContent(kmlText);
   const imported = [];
@@ -138,7 +141,10 @@ async function importSectorsFromKmlContent(kmlText, sessionOperatorId, sessionRo
   return { ok: true, data: { importedCount: imported.length } };
 }
 
-async function exportSectorsKml(sectorId = null) {
+async function exportSectorsKml(sessionRole, sectorId = null) {
+  if (!rbac.PERMISSIONS.sectorExport.includes(sessionRole)) {
+    return { ok: false, error: 'FORBIDDEN' };
+  }
   let sectors;
   if (sectorId) {
     const row = await get('SELECT * FROM sectors WHERE id = ? AND is_active = 1', [sectorId]);
@@ -191,13 +197,20 @@ function buildOfflineWeatherResponse(error) {
   };
 }
 
-async function syncWeatherAPI(sessionOperatorId, sessionRole, sectorId, lat, lon, options = {}) {
+async function syncWeatherAPI(sessionOperatorId, sessionRole, sectorId, _lat, _lon, options = {}) {
   if (!rbac.PERMISSIONS.weatherRead.includes(sessionRole)) {
     return { ok: false, error: 'FORBIDDEN' };
   }
   try {
     const sector = await get(`SELECT * FROM sectors WHERE id = ? AND ${ACTIVE_SECTOR_SQL}`, [sectorId]);
     if (!sector) return { ok: false, error: 'Сектор не найден.' };
+
+    // Always use sector center from DB — never trust client lat/lon (weather poisoning).
+    const lat = sector.center_lat;
+    const lon = sector.center_lon;
+    if (lat == null || lon == null) {
+      return { ok: false, error: 'У сектора не заданы координаты центра.' };
+    }
 
     const result = await fetchWeatherCascade(lat, lon, {
       radiusKm: sector.radius_km,
@@ -253,6 +266,10 @@ function buildCachedWeatherResponse({ sectors, results, cachedAt, failureReason,
 }
 
 async function syncAllSectorsWeather(sessionOperatorId, sessionRole) {
+  if (!rbac.PERMISSIONS.forceWeatherSync.includes(sessionRole)) {
+    return { ok: false, error: 'FORBIDDEN' };
+  }
+
   const sectors = await all(`SELECT id, center_lat, center_lon FROM sectors WHERE ${ACTIVE_SECTOR_SQL}`);
 
   if (sectors.length === 0) {
@@ -375,9 +392,20 @@ async function insertManualWeather(sessionOperatorId, sessionRole, sectorId, win
   return { ok: true, data: log };
 }
 
-async function getWeather(lat, lon) {
+async function getWeather(sessionRole, lat, lon) {
+  if (!rbac.PERMISSIONS.weatherRead.includes(sessionRole)) {
+    return { ok: false, error: 'FORBIDDEN' };
+  }
+  const parsedLat = parseFloat(lat);
+  const parsedLon = parseFloat(lon);
+  if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLon)) {
+    return { ok: false, error: 'Укажите корректные координаты lat/lon.' };
+  }
+  if (parsedLat < -90 || parsedLat > 90 || parsedLon < -180 || parsedLon > 180) {
+    return { ok: false, error: 'Координаты вне допустимого диапазона.' };
+  }
   try {
-    const result = await fetchWeatherCascade(lat, lon);
+    const result = await fetchWeatherCascade(parsedLat, parsedLon);
     return {
       ok: true,
       data: {
@@ -388,7 +416,7 @@ async function getWeather(lat, lon) {
         isCached: false,
       },
       source: result.source_used,
-      coordinates: { lat: parseFloat(lat), lon: parseFloat(lon) },
+      coordinates: { lat: parsedLat, lon: parsedLon },
     };
   } catch (error) {
     if (error instanceof OfflineWeatherError || error?.code === 'OFFLINE_WEATHER') {

@@ -41,6 +41,19 @@ describe('rbac', () => {
     expect(rbac.PERMISSIONS.missionApprove).toContain('Руководитель');
     expect(rbac.PERMISSIONS.missionApprove).toContain('Администратор');
   });
+
+  test('sectorManage excludes operator; auditRead excludes operator', () => {
+    expect(rbac.PERMISSIONS.sectorManage).not.toContain('Оператор');
+    expect(rbac.PERMISSIONS.auditRead).not.toContain('Оператор');
+    expect(rbac.PERMISSIONS.sectorWrite).toContain('Оператор');
+  });
+
+  test('canViewOperatorProfile enforces ownership or listOperators', () => {
+    expect(rbac.canViewOperatorProfile('Оператор', 2, 2)).toBe(true);
+    expect(rbac.canViewOperatorProfile('Оператор', 2, 1)).toBe(false);
+    expect(rbac.canViewOperatorProfile('Администратор', 1, 2)).toBe(true);
+    expect(rbac.canViewOperatorProfile('Руководитель', 5, 2)).toBe(true);
+  });
 });
 
 describe('domain drone rules', () => {

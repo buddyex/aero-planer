@@ -1,94 +1,214 @@
 const OPERATOR_ROLES = ['Администратор', 'Руководитель', 'Техник', 'Оператор'];
 
+
+
 const ROLES = {
+
   ADMIN: 'Администратор',
+
   HEAD: 'Руководитель',
+
   TECH: 'Техник',
+
   OPERATOR: 'Оператор',
+
 };
+
+
 
 const PERMISSIONS = {
+
   manageOperators: [ROLES.ADMIN],
+
   maintenanceWrite: [ROLES.ADMIN, ROLES.TECH],
+
   fleetWrite: [ROLES.ADMIN, ROLES.HEAD, ROLES.TECH],
+
   fleetPhotoWrite: [ROLES.ADMIN, ROLES.TECH],
+
   missionWrite: [ROLES.ADMIN, ROLES.HEAD],
+
   missionSubmit: [ROLES.OPERATOR],
+
   missionApprove: [ROLES.ADMIN, ROLES.HEAD],
+
+  /** Редактирование границ секторов */
+
   sectorWrite: [ROLES.ADMIN, ROLES.HEAD, ROLES.OPERATOR],
+
+  /** Создание / удаление / импорт секторов */
+
+  sectorManage: [ROLES.ADMIN, ROLES.HEAD],
+
+  /** Экспорт KML секторов */
+
+  sectorExport: [ROLES.ADMIN, ROLES.HEAD, ROLES.OPERATOR],
+
   manualWeather: [ROLES.ADMIN, ROLES.HEAD, ROLES.OPERATOR],
-  forceWeatherSync: [ROLES.ADMIN],
+
+  forceWeatherSync: [ROLES.ADMIN, ROLES.HEAD, ROLES.OPERATOR],
+
   listOperators: [ROLES.ADMIN, ROLES.HEAD],
+
   syncAdmin: [ROLES.ADMIN],
+
+  auditRead: [ROLES.ADMIN, ROLES.HEAD],
+
   dashboardRead: [ROLES.ADMIN, ROLES.HEAD, ROLES.OPERATOR],
+
   scheduleRead: [ROLES.ADMIN, ROLES.HEAD, ROLES.OPERATOR],
+
+  /** Оператор нужен для выбора борта при создании миссии */
+
   fleetRead: [ROLES.ADMIN, ROLES.HEAD, ROLES.TECH, ROLES.OPERATOR],
+
   maintenanceRead: [ROLES.ADMIN, ROLES.TECH],
+
   weatherRead: [ROLES.ADMIN, ROLES.HEAD, ROLES.OPERATOR],
+
   profileRead: OPERATOR_ROLES,
+
   messagesRead: OPERATOR_ROLES,
+
   messagesWrite: OPERATOR_ROLES,
+
 };
+
+
 
 function canViewAllMissions(role) {
+
   return role === ROLES.ADMIN || role === ROLES.HEAD;
+
 }
+
+
 
 function isAssignedMissionOperator(userId, missionOperatorId) {
+
   return userId === missionOperatorId;
+
 }
+
+
 
 function canStartMission(role, userId, missionOperatorId) {
+
   return role === ROLES.OPERATOR && isAssignedMissionOperator(userId, missionOperatorId);
+
 }
+
+
 
 function canCompleteMission(role, userId, missionOperatorId) {
+
   return role === ROLES.OPERATOR && isAssignedMissionOperator(userId, missionOperatorId);
+
 }
+
+
 
 function canCancelMission(role, userId, missionOperatorId) {
+
   if (role === ROLES.ADMIN || role === ROLES.HEAD) return true;
+
   if (role === ROLES.OPERATOR) return isAssignedMissionOperator(userId, missionOperatorId);
+
   return false;
+
 }
+
+
 
 function canManageMission(role, userId, missionOperatorId) {
+
   return (
+
     canStartMission(role, userId, missionOperatorId) ||
+
     canCompleteMission(role, userId, missionOperatorId) ||
+
     canCancelMission(role, userId, missionOperatorId)
+
   );
+
 }
+
+
 
 function canDownloadMissionDocuments(role, userId, missionOperatorId, missionStatus) {
+
   if (missionStatus !== 'Завершено') return false;
+
   if (role === ROLES.ADMIN || role === ROLES.HEAD) return true;
+
   if (role === ROLES.OPERATOR) return isAssignedMissionOperator(userId, missionOperatorId);
+
   return false;
+
 }
+
+
 
 function canTransitionMissionStatus(role, userId, missionOperatorId, targetStatus) {
+
   switch (targetStatus) {
+
     case 'Выполняется':
+
       return canStartMission(role, userId, missionOperatorId);
+
     case 'Завершено':
+
       return canCompleteMission(role, userId, missionOperatorId);
+
     case 'Отменено':
+
       return canCancelMission(role, userId, missionOperatorId);
+
     default:
+
       return false;
+
   }
+
 }
 
+
+
+function canViewOperatorProfile(sessionRole, sessionOperatorId, targetOperatorId) {
+
+  if (sessionOperatorId === targetOperatorId) return true;
+
+  return PERMISSIONS.listOperators.includes(sessionRole);
+
+}
+
+
+
 module.exports = {
+
   OPERATOR_ROLES,
+
   ROLES,
+
   PERMISSIONS,
+
   canViewAllMissions,
+
   canStartMission,
+
   canCompleteMission,
+
   canCancelMission,
+
   canManageMission,
+
   canDownloadMissionDocuments,
+
   canTransitionMissionStatus,
+
+  canViewOperatorProfile,
+
 };
+

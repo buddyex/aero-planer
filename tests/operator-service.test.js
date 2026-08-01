@@ -103,7 +103,7 @@ describe('operator.service KPIs', () => {
         total_actions: 3,
       });
 
-    const result = await operatorService.getOperatorProfile(1, 2);
+    const result = await operatorService.getOperatorProfile(1, 'Администратор', 2);
     expect(result.ok).toBe(true);
     expect(result.data.kpis).toEqual({
       planned_missions: 1,

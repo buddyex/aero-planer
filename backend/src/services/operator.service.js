@@ -177,8 +177,12 @@ async function buildOperatorKpis(operatorId, role) {
   return normalizeKpiRow(await fetchPilotKPIs(operatorId));
 }
 
-async function getOperatorProfile(sessionOperatorId, targetOperatorId) {
+async function getOperatorProfile(sessionOperatorId, sessionRole, targetOperatorId) {
   const operatorId = targetOperatorId ?? sessionOperatorId;
+  if (!rbac.canViewOperatorProfile(sessionRole, sessionOperatorId, operatorId)) {
+    return { ok: false, error: 'FORBIDDEN' };
+  }
+
   const row = await get(
     'SELECT id, full_name, login, role, duty_status FROM operators WHERE id = ?',
     [operatorId],
@@ -198,9 +202,14 @@ async function getOperatorKPIs(sessionOperatorId) {
 }
 
 async function getAuditLogs(sessionRole, limit = 50, sinceTimestamp = null) {
-  if (!rbac.PERMISSIONS.syncAdmin.includes(sessionRole) && !rbac.PERMISSIONS.dashboardRead.includes(sessionRole)) {
+  if (!rbac.PERMISSIONS.auditRead.includes(sessionRole)) {
     return { ok: false, error: 'FORBIDDEN' };
   }
+  const config = require('../config');
+  const safeLimit = Math.min(
+    Math.max(parseInt(limit, 10) || 50, 1),
+    config.limits.auditLogMaxLimit,
+  );
   let sql = `SELECT al.*, o.full_name AS operator_name FROM audit_logs al
              LEFT JOIN operators o ON o.id = al.operator_id`;
   const params = [];
@@ -209,7 +218,7 @@ async function getAuditLogs(sessionRole, limit = 50, sinceTimestamp = null) {
     params.push(sinceTimestamp);
   }
   sql += ' ORDER BY al.timestamp DESC LIMIT ?';
-  params.push(limit);
+  params.push(safeLimit);
   const rows = await all(sql, params);
   return { ok: true, data: rows };
 }

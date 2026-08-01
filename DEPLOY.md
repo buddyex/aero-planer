@@ -1,5 +1,6 @@
 # Aero-Planer — деплой на Ubuntu VPS
 
+> **Timeweb Cloud (чистая Ubuntu)** — пошаговый гайд: [DEPLOY_TIMEWEB.md](DEPLOY_TIMEWEB.md).  
 > **Локальная разработка и первый запуск на своём ПК** — в [README.md](README.md) (установка Node.js, MySQL, `backend/.env`, `npm run setup-db`, `npm run dev:full`).  
 > Этот документ — для выкладки на production-сервер, когда проект будет готов к хостингу.
 
@@ -51,11 +52,11 @@ pm2 save
 ```bash
 cd /path/to/project
 cp .env.example .env
-# VITE_API_URL=https://your-domain.ru/api
-# VITE_WS_URL=https://your-domain.ru
+# VITE_API_URL=/api
+# VITE_WS_URL не нужен за Nginx (Socket.io на origin страницы)
 npm ci && npm run build
-sudo mkdir -p /var/www/aero-planer/dist
-sudo cp -r dist/renderer/* /var/www/aero-planer/dist/
+sudo mkdir -p /var/www/aero-planer/frontend/dist
+sudo cp -r dist/renderer/* /var/www/aero-planer/frontend/dist/
 ```
 
 ## 4. nginx
@@ -86,7 +87,8 @@ npm run dev:full
 cd backend && npm run migrate:wear
 ```
 
-Демо-учётные записи (после seed): `admin/1234`, `operator1/1111`, `tech1/3333`, `head1/4444`.
+Демо-учётные записи (после seed): `admin/123456`, `operator1/111111`, `tech1/333333`, `head1/444444`.
+Перед production обязательно смените PIN и задайте сильный `JWT_SECRET` (≥32 символов) в `backend/.env`.
 
 ## 6. Миграция из SQLite (опционально)
 

@@ -34,18 +34,14 @@ function createApiRouter() {
   router.post('/auth/login', async (req, res, next) => {
     try {
       const { login, pin } = req.body ?? {};
-      const result = await authService.loginOperator(login, pin);
+      const clientIp = req.ip || req.socket?.remoteAddress || null;
+      const result = await authService.loginOperator(login, pin, clientIp);
       if (!result.ok) {
         const status = result.error === 'Укажите логин и PIN-код.' ? 400 : 401;
         return res.status(status).json(result);
       }
 
-      res.cookie(config.jwt.refreshCookie, result.refreshToken, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
+      res.cookie(config.jwt.refreshCookie, result.refreshToken, authService.refreshCookieOptions());
 
       return res.json({
         ok: true,
@@ -65,9 +61,24 @@ function createApiRouter() {
     }
   });
 
+  router.post('/auth/refresh', async (req, res) => {
+    const token = req.cookies?.[config.jwt.refreshCookie];
+    const result = await authService.refreshAccessToken(token);
+    if (!result.ok) {
+      res.clearCookie(config.jwt.refreshCookie, authService.clearRefreshCookieOptions());
+      return res.status(401).json(result);
+    }
+    res.cookie(config.jwt.refreshCookie, result.refreshToken, authService.refreshCookieOptions());
+    return res.json({
+      ok: true,
+      data: result.data,
+      access_token: result.accessToken,
+    });
+  });
+
   router.post('/auth/logout', requireAuth, async (req, res) => {
     await authService.logoutOperator(req.operatorId);
-    res.clearCookie(config.jwt.refreshCookie);
+    res.clearCookie(config.jwt.refreshCookie, authService.clearRefreshCookieOptions());
     return res.json({ ok: true });
   });
 
@@ -304,25 +315,30 @@ function createApiRouter() {
 
   router.get('/sectors/export-kml', requireAuth, async (req, res) => {
     const sectorId = req.query.sectorId ? parseInt(req.query.sectorId, 10) : null;
-    const result = await sectorService.exportSectorsKml(sectorId);
-    if (!result.ok) return res.status(400).json(result);
+    const result = await sectorService.exportSectorsKml(req.user.role, sectorId);
+    if (!result.ok) return res.status(result.error === 'FORBIDDEN' ? 403 : 400).json(result);
     res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
     return res.send(result.data);
   });
 
   router.get('/weather', requireAuth, async (req, res) => {
-    res.json(await sectorService.getWeather(req.query.lat, req.query.lon));
+    const result = await sectorService.getWeather(req.user.role, req.query.lat, req.query.lon);
+    res.status(result.ok ? 200 : result.error === 'FORBIDDEN' ? 403 : 400).json(result);
   });
 
   router.post('/weather/sync/:sectorId', requireAuth, async (req, res) => {
-    const { lat, lon } = req.body ?? {};
-    const result = await sectorService.syncWeatherAPI(req.operatorId, req.user.role, req.params.sectorId, lat, lon);
-    res.status(result.ok ? 200 : 400).json(result);
+    // Coordinates are taken from the sector row in DB (ignore body lat/lon).
+    const result = await sectorService.syncWeatherAPI(
+      req.operatorId,
+      req.user.role,
+      req.params.sectorId,
+    );
+    res.status(result.ok ? 200 : result.error === 'FORBIDDEN' ? 403 : 400).json(result);
   });
 
   router.post('/weather/sync-all', requireAuth, async (req, res) => {
     const result = await sectorService.syncAllSectorsWeather(req.operatorId, req.user.role);
-    res.status(result.ok ? 200 : 400).json(result);
+    res.status(result.ok ? 200 : result.error === 'FORBIDDEN' ? 403 : 400).json(result);
   });
 
   router.post('/weather/manual', requireAuth, async (req, res) => {
@@ -388,11 +404,16 @@ function createApiRouter() {
   });
 
   router.get('/operators/profile', requireAuth, async (req, res) => {
-    res.json(await operatorService.getOperatorProfile(req.operatorId, req.operatorId));
+    res.json(await operatorService.getOperatorProfile(req.operatorId, req.user.role, req.operatorId));
   });
 
   router.get('/operators/profile/:id', requireAuth, async (req, res) => {
-    res.json(await operatorService.getOperatorProfile(req.operatorId, parseInt(req.params.id, 10)));
+    const result = await operatorService.getOperatorProfile(
+      req.operatorId,
+      req.user.role,
+      parseInt(req.params.id, 10),
+    );
+    res.status(result.ok ? 200 : result.error === 'FORBIDDEN' ? 403 : 404).json(result);
   });
 
   router.get('/operators/kpis', requireAuth, async (req, res) => {
@@ -400,13 +421,12 @@ function createApiRouter() {
   });
 
   router.get('/audit-logs', requireAuth, async (req, res) => {
-    res.json(
-      await operatorService.getAuditLogs(
-        req.user.role,
-        parseInt(req.query.limit || '50', 10),
-        req.query.since,
-      ),
+    const result = await operatorService.getAuditLogs(
+      req.user.role,
+      parseInt(req.query.limit || '50', 10),
+      req.query.since,
     );
+    res.status(result.ok ? 200 : 403).json(result);
   });
 
   // Maintenance

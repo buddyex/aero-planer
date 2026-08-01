@@ -39,15 +39,25 @@ export function mapDroneRow(row: DroneRow | Record<string, unknown>): Drone {
 export function resolveDronePhotoUrl(photoUrl: string | null | undefined): string | null {
   if (!photoUrl) return null;
   if (/^https?:\/\//i.test(photoUrl)) return photoUrl;
+
+  const token =
+    typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('aero-planer-access-token') : null;
+  const withToken = (url: string) => {
+    if (!token) return url;
+    const sep = url.includes('?') ? '&' : '?';
+    return `${url}${sep}access_token=${encodeURIComponent(token)}`;
+  };
+
   const apiBase = import.meta.env.VITE_API_URL || '/api';
   if (/^https?:\/\//i.test(apiBase)) {
     try {
-      return `${new URL(apiBase).origin}${photoUrl.startsWith('/') ? '' : '/'}${photoUrl}`;
+      const absolute = `${new URL(apiBase).origin}${photoUrl.startsWith('/') ? '' : '/'}${photoUrl}`;
+      return withToken(absolute);
     } catch {
-      return photoUrl;
+      return withToken(photoUrl);
     }
   }
-  return photoUrl;
+  return withToken(photoUrl);
 }
 
 export function countDronesByStatus(drones: Drone[], status: DroneStatus): number {

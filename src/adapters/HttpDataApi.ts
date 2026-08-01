@@ -33,6 +33,40 @@ export class HttpDataApi {
       }
       return config;
     });
+
+    this.client.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const original = error.config as { _retry?: boolean; url?: string; headers?: Record<string, string> };
+        if (
+          error.response?.status === 401 &&
+          original &&
+          !original._retry &&
+          original.url &&
+          !original.url.includes('/auth/login') &&
+          !original.url.includes('/auth/refresh')
+        ) {
+          original._retry = true;
+          try {
+            const refresh = await this.client.post<{
+              ok: boolean;
+              access_token?: string;
+            }>('/auth/refresh');
+            if (refresh.data.ok && refresh.data.access_token) {
+              setStoredToken(refresh.data.access_token);
+              original.headers = {
+                ...original.headers,
+                Authorization: `Bearer ${refresh.data.access_token}`,
+              };
+              return this.client.request(original);
+            }
+          } catch {
+            setStoredToken(null);
+          }
+        }
+        return Promise.reject(error);
+      },
+    );
   }
 
   getAccessToken(): string | null {
@@ -358,8 +392,8 @@ export class HttpDataApi {
     }
   }
 
-  syncWeather(sectorId: number, lat: number, lon: number) {
-    return this.wrap(this.client.post(`/weather/sync/${sectorId}`, { lat, lon }));
+  syncWeather(sectorId: number, _lat?: number, _lon?: number) {
+    return this.wrap(this.client.post(`/weather/sync/${sectorId}`, {}));
   }
 
   syncAllSectorsWeather() {

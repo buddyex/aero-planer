@@ -422,27 +422,32 @@ function reportRendererError(sessionRole, operatorId, payload = {}) {
     return { ok: false, error: 'UNAUTHORIZED' };
   }
 
-  const message = payload.message || payload.error || 'Unknown renderer error';
+  const config = require('../config');
+  const maxLen = config.limits.errorReportMaxLength;
+  const rawMessage = String(payload.message || payload.error || 'Unknown renderer error').slice(0, maxLen);
+  const location = String(payload.location || payload.url || 'renderer').slice(0, 256);
   const entry = systemLogger.logSystemError({
     subsystem: 'renderer',
-    location: payload.location || payload.url || 'renderer',
-    error: new Error(message),
+    location,
+    error: new Error(rawMessage),
     phase: payload.phase || 'runtime',
-    severity: payload.severity,
+    severity: payload.severity === 'critical' || payload.severity === 'error' ? payload.severity : 'warning',
     context: {
       event: payload.type === 'unhandledrejection' ? 'renderer-unhandledrejection' : 'renderer-error',
       operatorId,
       role: sessionRole,
-      componentStack: payload.componentStack,
-      url: payload.url,
+      componentStack: payload.componentStack
+        ? String(payload.componentStack).slice(0, maxLen)
+        : undefined,
+      url: payload.url ? String(payload.url).slice(0, 512) : undefined,
     },
   });
 
   if (payload.stack && entry) {
-    entry.stack = payload.stack;
+    entry.stack = String(payload.stack).slice(0, maxLen);
   }
 
-  return { ok: true, data: { id: entry.id } };
+  return { ok: true, data: { id: entry?.id } };
 }
 
 module.exports = {

@@ -11,6 +11,7 @@ const { createApiRouter } = require('./routes/api.routes');
 const { initSockets } = require('./sockets/index');
 const { initEmitter } = require('./sockets/emitter');
 const { errorHandler } = require('./middleware/errorHandler');
+const { requireUploadsAuth } = require('./middleware/uploadsAuth');
 
 async function verifyDatabaseConnection() {
   try {
@@ -43,17 +44,24 @@ initSockets(io);
 
 app.use(
   helmet({
-    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+    contentSecurityPolicy: config.isProduction ? undefined : false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
   }),
 );
 app.use(cors({ origin: config.corsOrigin, credentials: true }));
-app.use(express.json({ limit: '10mb' }));
+app.set('trust proxy', 1);
+app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser());
 app.use(
   '/uploads',
+  requireUploadsAuth,
   express.static(path.join(__dirname, '../uploads'), {
-    maxAge: '7d',
+    maxAge: config.isProduction ? '1h' : 0,
     fallthrough: true,
+    setHeaders(res) {
+      res.setHeader('Cache-Control', 'private, max-age=3600');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+    },
   }),
 );
 app.use('/api', createApiRouter());

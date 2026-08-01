@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { get, all, run } = require('../db/pool');
 const rbac = require('../lib/rbac');
+const config = require('../config');
 const { emitToUser } = require('../sockets/emitter');
 
 async function getUsersForChat(sessionOperatorId, sessionRole, searchQuery) {
@@ -11,7 +12,7 @@ async function getUsersForChat(sessionOperatorId, sessionRole, searchQuery) {
   const params = [sessionOperatorId];
   if (searchQuery?.trim()) {
     sql += ' AND (full_name LIKE ? OR login LIKE ?)';
-    const q = `%${searchQuery.trim()}%`;
+    const q = `%${searchQuery.trim().slice(0, 100)}%`;
     params.push(q, q);
   }
   sql += ' ORDER BY full_name';
@@ -26,14 +27,29 @@ async function sendMessage(sessionOperatorId, sessionRole, senderId, receiverId,
   if (senderId !== sessionOperatorId) {
     return { ok: false, error: 'Нельзя отправлять сообщения от имени другого пользователя.' };
   }
-  const trimmed = String(text).trim();
+  const trimmed = String(text ?? '').trim();
   if (!trimmed) return { ok: false, error: 'Текст сообщения пуст.' };
+  if (trimmed.length > config.limits.messageMaxLength) {
+    return {
+      ok: false,
+      error: `Сообщение слишком длинное (макс. ${config.limits.messageMaxLength} символов).`,
+    };
+  }
+
+  const peerId = parseInt(receiverId, 10);
+  if (!Number.isFinite(peerId)) {
+    return { ok: false, error: 'Некорректный получатель.' };
+  }
+  const peer = await get('SELECT id FROM operators WHERE id = ?', [peerId]);
+  if (!peer) {
+    return { ok: false, error: 'Получатель не найден.' };
+  }
 
   const id = uuidv4();
   await run(
     `INSERT INTO messages (id, sender_id, receiver_id, text, timestamp, sync_status, is_read)
      VALUES (?, ?, ?, ?, NOW(), 1, 0)`,
-    [id, senderId, receiverId, trimmed],
+    [id, senderId, peerId, trimmed],
   );
 
   const message = await get(
@@ -45,7 +61,7 @@ async function sendMessage(sessionOperatorId, sessionRole, senderId, receiverId,
     [id],
   );
 
-  emitToUser(receiverId, 'chat:message', message);
+  emitToUser(peerId, 'chat:message', message);
   emitToUser(senderId, 'chat:message', message);
 
   return { ok: true, data: message };

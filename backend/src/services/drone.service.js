@@ -14,6 +14,28 @@ const EXT_BY_MIME = {
   'image/webp': '.webp',
 };
 
+function detectImageMime(buffer) {
+  if (!buffer || buffer.length < 12) return null;
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'image/jpeg';
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
+    return 'image/png';
+  }
+  // RIFF....WEBP
+  if (
+    buffer[0] === 0x52 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x46 &&
+    buffer[8] === 0x57 &&
+    buffer[9] === 0x45 &&
+    buffer[10] === 0x42 &&
+    buffer[11] === 0x50
+  ) {
+    return 'image/webp';
+  }
+  return null;
+}
+
 const ACTIVE_MISSION_STATUSES = ['Ожидает утверждения', 'К выполнению', 'Выполняется'];
 
 function ensureUploadDir() {
@@ -44,7 +66,16 @@ async function getDrones(sessionRole) {
   if (!rbac.PERMISSIONS.fleetRead.includes(sessionRole)) {
     return { ok: false, error: 'FORBIDDEN' };
   }
-  const rows = await all('SELECT * FROM drones ORDER BY id');
+  // Operators need fleet for mission assignment; hide photo URLs (uploads are auth-gated).
+  const isOperatorOnly = sessionRole === rbac.ROLES.OPERATOR;
+  const rows = await all(
+    isOperatorOnly
+      ? `SELECT id, name, serial_number, max_wind_speed, battery_capacity, payload_capacity,
+                flight_time_max, flight_hours, status, written_off_at, written_off_reason,
+                NULL AS photo_url
+         FROM drones ORDER BY id`
+      : 'SELECT * FROM drones ORDER BY id',
+  );
   return { ok: true, data: rows };
 }
 
@@ -272,7 +303,12 @@ async function uploadDronePhoto(sessionOperatorId, sessionRole, id, file) {
   if (!file) {
     return { ok: false, error: 'Файл фотографии не передан.' };
   }
-  if (!ALLOWED_MIME.has(file.mimetype)) {
+
+  const detectedMime = detectImageMime(file.buffer);
+  if (!detectedMime || !ALLOWED_MIME.has(detectedMime)) {
+    return { ok: false, error: 'Допустимы только JPEG, PNG или WebP.' };
+  }
+  if (file.mimetype && file.mimetype !== detectedMime && !ALLOWED_MIME.has(file.mimetype)) {
     return { ok: false, error: 'Допустимы только JPEG, PNG или WebP.' };
   }
 
@@ -285,7 +321,7 @@ async function uploadDronePhoto(sessionOperatorId, sessionRole, id, file) {
   }
 
   ensureUploadDir();
-  const ext = EXT_BY_MIME[file.mimetype] || path.extname(file.originalname).toLowerCase() || '.jpg';
+  const ext = EXT_BY_MIME[detectedMime] || '.jpg';
   const filename = `drone-${id}-${Date.now()}${ext}`;
   const destPath = path.join(DRONE_UPLOAD_DIR, filename);
   const photoUrl = `/uploads/drones/${filename}`;
@@ -337,4 +373,5 @@ module.exports = {
   DRONE_UPLOAD_DIR,
   UPLOADS_ROOT,
   ALLOWED_MIME,
+  detectImageMime,
 };

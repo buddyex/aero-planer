@@ -20,7 +20,7 @@ export const ROUTE_ALLOWED_ROLES: Record<AppRoute, OperatorRole[]> = {
   maintenance: ['Администратор', 'Техник'],
   weather: ['Администратор', 'Руководитель', 'Оператор'],
   profile: OPERATOR_ROLES,
-  personnel: OPERATOR_ROLES,
+  personnel: ['Администратор', 'Руководитель'],
   admin: ['Администратор'],
   system: ['Администратор'],
 };
@@ -65,7 +65,7 @@ const ROLE_PERMISSIONS: Record<OperatorRole, string[]> = {
     'Мониторинг дашборда',
     'Просмотр расписания миссий',
     'Ручной ввод метеоданных',
-    'Редактирование границ секторов и KML',
+    'Редактирование границ секторов',
   ],
 };
 
@@ -210,15 +210,21 @@ export function getAllowedMissionTransitions(status: MissionStatus): MissionStat
 }
 
 export function canForceWeatherSync(role: OperatorRole): boolean {
-  return role === 'Администратор';
+  return role === 'Администратор' || role === 'Руководитель' || role === 'Оператор';
 }
 
 export function canManualWeatherInput(role: OperatorRole): boolean {
   return role === 'Администратор' || role === 'Руководитель' || role === 'Оператор';
 }
 
+/** Редактирование границ секторов */
 export function canEditSectorBoundaries(role: OperatorRole): boolean {
   return role === 'Администратор' || role === 'Руководитель' || role === 'Оператор';
+}
+
+/** Создание / удаление / импорт секторов */
+export function canManageSectors(role: OperatorRole): boolean {
+  return role === 'Администратор' || role === 'Руководитель';
 }
 
 export function canCompleteMaintenance(role: OperatorRole): boolean {

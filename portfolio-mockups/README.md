@@ -19,7 +19,7 @@
 
 ## Переснять
 
-Нужны запущенные `npm run dev` (Vite + API) и демо-логин `admin` / `1234`:
+Нужны запущенные `npm run dev` (Vite + API) и демо-логин `admin` / `123456`:
 
 ```bash
 node portfolio-mockups/_capture.mjs

@@ -44,7 +44,7 @@ async function apiLogin() {
   const res = await fetch(`${API}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ login: 'admin', pin: '1234' }),
+    body: JSON.stringify({ login: 'admin', pin: '123456' }),
   });
   const json = await res.json();
   if (!json.ok || !json.access_token) {

@@ -4,11 +4,11 @@ const { pool } = require('../src/db/pool');
 const { createPinCredentials } = require('../src/lib/pin-auth');
 
 const operators = [
-  { id: 1, full_name: 'Иванов Алексей Сергеевич', login: 'admin', pin: '1234', role: 'Администратор' },
-  { id: 2, full_name: 'Петров Кирилл Викторович', login: 'operator1', pin: '1111', role: 'Оператор' },
-  { id: 3, full_name: 'Сидорова Мария Леонидовна', login: 'operator2', pin: '2222', role: 'Оператор' },
-  { id: 4, full_name: 'Козлов Дмитрий Иванович', login: 'tech1', pin: '3333', role: 'Техник' },
-  { id: 5, full_name: 'Николаев Роман Петрович', login: 'head1', pin: '4444', role: 'Руководитель' },
+  { id: 1, full_name: 'Иванов Алексей Сергеевич', login: 'admin', pin: '123456', role: 'Администратор' },
+  { id: 2, full_name: 'Петров Кирилл Викторович', login: 'operator1', pin: '111111', role: 'Оператор' },
+  { id: 3, full_name: 'Сидорова Мария Леонидовна', login: 'operator2', pin: '222222', role: 'Оператор' },
+  { id: 4, full_name: 'Козлов Дмитрий Иванович', login: 'tech1', pin: '333333', role: 'Техник' },
+  { id: 5, full_name: 'Николаев Роман Петрович', login: 'head1', pin: '444444', role: 'Руководитель' },
 ];
 
 const drones = [

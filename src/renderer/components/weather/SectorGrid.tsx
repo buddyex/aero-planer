@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import { useAuth } from '../../context/AuthContext';
 import type { RiskLevel } from '../../types';
-import { canEditSectorBoundaries } from '../../utils/permissions';
+import { canManageSectors } from '../../utils/permissions';
 import { formatMetric } from '../../utils/weather';
 import { prepareForNativeDialog, restorePageInput } from '../../utils/mapFocus';
 import { GlassCard } from '../ui/GlassCard';
@@ -21,7 +21,7 @@ export function SectorGrid() {
   const { sectors, hasBackend, deleteSector } = useAppData();
   const { user } = useAuth();
 
-  const canManageSectors = Boolean(user && canEditSectorBoundaries(user.role) && hasBackend);
+  const canDeleteSectors = Boolean(user && canManageSectors(user.role) && hasBackend);
 
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionInfo, setActionInfo] = useState<string | null>(null);
@@ -101,7 +101,7 @@ export function SectorGrid() {
                     </span>
                   </div>
                 </div>
-                {canManageSectors && (
+                {canDeleteSectors && (
                   <button
                     type="button"
                     className="sector-card__delete btn btn--ghost"

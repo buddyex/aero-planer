@@ -161,7 +161,7 @@ export interface DataApi {
   ) => Promise<ApiResult>;
   importSectorsKml: () => Promise<ApiResult & { imported?: unknown[]; errors?: string[] }>;
   exportSectorsKml: (sectorId?: number) => Promise<ApiResult & { count?: number; sectorName?: string }>;
-  syncWeather: (sectorId: number, lat: number, lon: number) => Promise<ApiResult>;
+  syncWeather: (sectorId: number, lat?: number, lon?: number) => Promise<ApiResult>;
   syncAllSectorsWeather: () => Promise<
     ApiResult & {
       syncedAt?: string;
